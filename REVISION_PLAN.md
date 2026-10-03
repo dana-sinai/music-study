@@ -53,6 +53,8 @@ How the pipeline worked: songs were selected if the Spotify *title* contained He
 - Then have a second person verify a random 10% of all matches and report the agreement rate.
 - Freeze the corpus and re-run *everything* on it once.
 
+**Implemented in `lyrics_pipeline/`** (tested offline; needs network access to Shironet and Hugging Face to run). Replaying its decision rule on the old matches auto-accepts none of the 43 wrong songs. The old log also showed that **164 searches returned "0 results"** because of bot-protection pages, not missing songs, and that a parser bug glued title words together.
+
 ## 2. Redesign
 
 **Main question (revised):** Does a stream-weighted, *validated* index of the emotional content in what Israelis

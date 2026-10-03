@@ -1,0 +1,10 @@
+pandas
+numpy
+scipy
+requests
+beautifulsoup4
+rapidfuzz
+pytest
+# scoring only:
+torch
+transformers
