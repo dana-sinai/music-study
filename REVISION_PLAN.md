@@ -30,7 +30,28 @@ Framing problems a reviewer will flag:
 - **The structural-break (Chow) and Kruskal-Wallis tests are not in the notebook or the Drive scripts.** No four-phase code exists either; the notebook uses a 2-period split, and `analysis_summary.py` uses 10 periods. Find the code that produced these results (local Mac folder?) or re-derive them before resubmitting. The reported joy z = +2.69 also doesn't match the notebook (max z = 2.99).
 - **The original hypotheses contradict the paper's "predicted" claim.** The notebook's pre-stated H1 was that "sadness and anger peak in Q4 2023–Q1 2024, then decline". The data show sadness *rising*. The "manic defence index" came from the psychoanalytic essay that started the project, and the joy song (תמיד אוהב אותי) was listed as an essay song in advance.
 - **Songs are cut off at 512 tokens.** Long lyrics are truncated, and repeated choruses are scored as they appear. Report how many songs were truncated.
-- **An external-criterion test already exists and was dropped.** Monthly PTSD incidence from the MHRC (Krivoy-Charite data) covers Oct 2023–Oct 2024 (13 months). The October 2024 value is entered as **30** in one cell and **19** in another and in `analysis_summary.py`; check the source. Of 8 emotions × 3 lags plus 2 indices, **trust** stands out (r = −0.82). It **survives linear detrending** (r = −0.82 with 30; −0.72 with 19) and partly survives differencing (r = −0.69 / −0.54). Other emotions do not. This is a lead to test with the full MHRC series through 2026, ideally pre-registered. It is not a result yet: n = 13, many comparisons, and trust depends on ~11 songs.
+- **An external-criterion test already exists and was dropped.** Monthly PTSD incidence from the MHRC (Krivoy-Charite data) covers Oct 2023–Oct 2024 (13 months). The October 2024 value is entered as **30** in one cell and **19** in another and in `analysis_summary.py`; check the source. Of 8 emotions × 3 lags plus 2 indices, **trust** stands out (r = −0.82). It **survives linear detrending** (r = −0.82 with 30; −0.72 with 19) and partly survives differencing (r = −0.69 / −0.54). Other emotions do not. **Update after the lyric audit (below): this association disappears once the wrong-song matches are removed** (raw r = −0.35; detrended r = +0.32). It was produced by wrong lyrics, not by listening. Re-test only after the corpus is fixed.
+
+### Lyric matching audit (`reanalysis/lyrics_audit.py`)
+
+How the pipeline worked: songs were selected if the Spotify *title* contained Hebrew characters (818 of 1,318 tracks, 78% of streams). Shironet was then searched by title only, and the best hit was accepted when 0.8 × title similarity + 0.2 × artist similarity exceeded 70.
+
+1. **A wrong artist can still pass.** With a perfect title match, the score is ≥ 80 even when the artist similarity is 0. **43 of 408 matched songs (11%; 7% of scored streams) carry another artist's song with the same title.** Examples: "אהבה" by Osher Cohen (Rain Sobotka's lyrics), "השם ירחם" by Tuna (Itay Zvulun's), "רוזה" by Omer Adam (Yehoram Gaon's), and "צוחקת ובוכה" by Eden Hason (Ilanit's). These include the main **trust** songs (הריני, צוחקת ובוכה), a top **fear** song (עוד יום), and one of the 7 **joy** songs (פרפר).
+   - Effect of removing them: weekly trust correlates only r = .73 with the original series. The disgust trend drops from ρ = .84 to .63, and the anger trend disappears.
+2. **Half of the Hebrew songs have no lyrics.** 410 of 818 Hebrew-titled songs (8.4% of all streams) are missing, including #1 hits ("אחת ממיליון", "לאהוב אותך כל יום", "רוקי"). 34 of them are live, acoustic or medley versions whose decorated titles fail the search ("- Live", "גרסה אקוסטית", "&", "(7.10.23)").
+3. **Selection by title script misses some Israeli songs.** 15 songs with English-letter titles are excluded (e.g., "Hurricane", "New Day Will Rise"). This is only 0.8% of streams, but it is not random: these are Eurovision songs.
+4. **Long lyrics are truncated.** 49 songs (>1,500 characters) were cut at 512 tokens.
+5. **Correct lyrics now cover only 79% of streams from Hebrew-titled songs.**
+
+**Fixes:**
+- Make the artist a **hard gate**: accept a hit only if the Shironet performer matches the mapped Hebrew artist, or if it is a documented cover.
+- Search by title + artist, and fall back to the artist's Shironet song list.
+- Normalize titles before searching: strip version tags; split medleys into their component songs.
+- Select songs by artist or language, not by title script.
+- Score long lyrics in chunks and average the scores, instead of truncating.
+- Hand-check the ranked `reanalysis/lyrics_review_queue.csv`. The top 50 rows cover 66% of problem streams; the top 100 cover 82%.
+- Then have a second person verify a random 10% of all matches and report the agreement rate.
+- Freeze the corpus and re-run *everything* on it once.
 
 ## 2. Redesign
 
