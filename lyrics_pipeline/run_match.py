@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from urllib.parse import parse_qs, urlparse
 from collections import defaultdict
 from pathlib import Path
 
@@ -45,18 +46,48 @@ def song_universe(charts: pd.DataFrame, mapping: dict) -> pd.DataFrame:
     return g[g.selection.notna()].sort_values("total_streams", ascending=False).reset_index(drop=True)
 
 
+def seed_from_old_run(mapping: dict, known: dict) -> dict:
+    """Use the Feb 2026 matches that pass the NEW rule (artist-gated) to
+    (a) learn Shironet artist IDs and (b) reuse their lyrics instead of refetching.
+    Returns {shironet_url: lyrics}."""
+    p = DATA / "hebrew_songs_with_lyrics.csv"
+    if not p.exists():
+        return {}
+    old = pd.read_csv(p)
+    old = old[old.lyrics.notna() & old.shironet_url.notna()]
+    lyr = {}
+    for r in old.itertuples():
+        variants = M.artist_variants(r.artist_names, mapping)
+        pid = parse_qs(urlparse(r.shironet_url).query).get("prfid", [None])[0]
+        c = M.decide(title_parts(r.track_name)[0], variants,
+                     {"title": r.shironet_title, "artist": r.shironet_artist, "prfid": pid, "url": r.shironet_url}, set())
+        if c["decision"] != "accept":
+            continue
+        lyr[r.shironet_url] = r.lyrics
+        for a in split_artists(r.artist_names):
+            if a not in NON_PERFORMERS and M.artist_score(M.artist_variants(a, mapping), r.shironet_artist) >= 90:
+                known[a].add(pid)
+    print(f"seeded from old run: {len(lyr)} verified lyrics, artist IDs for {len(known)} artists", flush=True)
+    return lyr
+
+
 def candidates_for(client: Client, part: str, variants: list[str], prfids: set[str]) -> tuple[list[dict], list[str]]:
     """Search strategies in order; stop early once an 'accept' appears."""
     cands, used = [], []
+    for pid in sorted(prfids):  # artist song list first: one cached page serves all of the artist's songs
+        try:
+            cands += parse_artist_works(client.artist_works(pid), pid)
+            used.append(f"works:{pid}")
+        except FileNotFoundError:  # offline and not cached: fall through to cached searches
+            pass
+    if any(M.decide(part, variants, c, prfids)["decision"] == "accept" for c in cands):
+        return cands, used
     queries = [part] + [f"{part} {v}" for v in variants if has_hebrew(v)][:2]
     for q in queries:
         cands += parse_search(client.search(q))
         used.append(f"search:{q}")
         if any(M.decide(part, variants, c, prfids)["decision"] == "accept" for c in cands):
             return cands, used
-    for pid in sorted(prfids):  # artist song list: catches titles the search ranks poorly
-        cands += parse_artist_works(client.artist_works(pid), pid)
-        used.append(f"works:{pid}")
     return cands, used
 
 
@@ -64,7 +95,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int)
     ap.add_argument("--offline", action="store_true")
-    ap.add_argument("--delay", type=float, default=2.5)
+    ap.add_argument("--delay", type=float, default=6.0)
     ap.add_argument("--uri", nargs="*", help="only these Spotify URIs (testing)")
     args = ap.parse_args()
 
@@ -84,6 +115,7 @@ def main():
 
     # Shironet artist IDs confirmed per Spotify artist; learned in pass 1, used in pass 2
     known: dict[str, set[str]] = defaultdict(set)
+    old_lyrics = seed_from_old_run(mapping, known)
     # exact-title hits for artists with no Hebrew name in the table (for M.learn_artist_names)
     unmapped_hits: dict[str, list] = defaultdict(list)
     rows, cand_log = [], []
@@ -145,6 +177,9 @@ def main():
                 if pass_no == 2:
                     texts = []
                     for p in picks:
+                        if p["url"] in old_lyrics:  # same Shironet page as a verified old match: no refetch
+                            texts.append(old_lyrics[p["url"]])
+                            continue
                         page = parse_lyrics_page(client.get(p["url"]))
                         texts.append(page["lyrics"] if page else "")
                     if all(texts):
