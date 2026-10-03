@@ -24,6 +24,14 @@ Framing problems a reviewer will flag:
 - Coverage: about 33% of streams are unscored, including all non-Hebrew songs (22% of streams), and the missing streams are not random.
 - Citation errors: Many Labs 4 is attributed to ref 14 (Pyszczynski 2006); ref 2 is cited for a WHO priority statement.
 
+### What the Colab notebook adds (`music_analysis.ipynb`; the copy `music_analysis 2.ipynb` is identical)
+
+- **The song count is explained, and the paper mixes two data versions.** The HebEMO run saved in the notebook scored **211** songs. The paper's Table 1 descriptives come from that run. The lyrics file later grew to 408 songs, and every time-series result (Tables 2–3, z-scores) comes from the **408**-song file: Table 3 reproduces exactly from it. Re-run once on a single, frozen corpus and report one N.
+- **The structural-break (Chow) and Kruskal-Wallis tests are not in the notebook or the Drive scripts.** No four-phase code exists either; the notebook uses a 2-period split, and `analysis_summary.py` uses 10 periods. Find the code that produced these results (local Mac folder?) or re-derive them before resubmitting. The reported joy z = +2.69 also doesn't match the notebook (max z = 2.99).
+- **The original hypotheses contradict the paper's "predicted" claim.** The notebook's pre-stated H1 was that "sadness and anger peak in Q4 2023–Q1 2024, then decline". The data show sadness *rising*. The "manic defence index" came from the psychoanalytic essay that started the project, and the joy song (תמיד אוהב אותי) was listed as an essay song in advance.
+- **Songs are cut off at 512 tokens.** Long lyrics are truncated, and repeated choruses are scored as they appear. Report how many songs were truncated.
+- **An external-criterion test already exists and was dropped.** Monthly PTSD incidence from the MHRC (Krivoy-Charite data) covers Oct 2023–Oct 2024 (13 months). The October 2024 value is entered as **30** in one cell and **19** in another and in `analysis_summary.py`; check the source. Of 8 emotions × 3 lags plus 2 indices, **trust** stands out (r = −0.82). It **survives linear detrending** (r = −0.82 with 30; −0.72 with 19) and partly survives differencing (r = −0.69 / −0.54). Other emotions do not. This is a lead to test with the full MHRC series through 2026, ideally pre-registered. It is not a result yet: n = 13, many comparisons, and trust depends on ~11 songs.
+
 ## 2. Redesign
 
 **Main question (revised):** Does a stream-weighted, *validated* index of the emotional content in what Israelis
