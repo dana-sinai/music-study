@@ -113,8 +113,11 @@ def parse_search(html: str) -> list[dict]:
 def parse_artist_works(html: str, prfid: str) -> list[dict]:
     """All songs listed on an artist's 'works' page (fallback when search misses)."""
     soup = BeautifulSoup(html, "html.parser")
-    name_el = soup.find(class_="artist_singer_title")
+    name_el = soup.find(class_="artist_singer_title") or soup.find(class_="artist_name_txt")
     artist = name_el.get_text(" ", strip=True) if name_el else ""
+    artist = re.sub(r'^שירים שבוצעו ע"י\s*', "", artist)  # works page header: 'songs performed by X'
+    if not artist and soup.title:
+        artist = re.sub(r'^שירים שבוצעו ע"י\s*|\s*-\s*שירונט\s*$', "", soup.title.get_text(strip=True))
     out, seen = [], set()
     for a in soup.find_all("a", href=True):
         h = a["href"]
