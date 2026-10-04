@@ -2,3 +2,6 @@ data/
 out/
 __pycache__/
 .pytest_cache/
+out_v1fixed/
+score_v1fixed.py
+build_v1fixed.py
