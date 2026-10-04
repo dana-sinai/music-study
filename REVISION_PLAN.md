@@ -102,3 +102,22 @@ Yes, but **after** the core fixes (steps 1, 2 and 5), not the current version. O
 - Server: **PsyArXiv** (fits the music-psychology and computational-social-science readership). Use **medRxiv** instead if Route B with clinical data is the lead.
 - All venues listed above accept preprinted manuscripts. Check each journal's current policy before posting.
 - Post together with the OSF pre-registration of the prospective test (step 6) to establish priority.
+
+### Re-scored corrected corpus (4 Oct 2026) — `reanalysis/results_corrected_old_corpus/`
+
+Shironet blocked the cloud server (HTTP 403) after ~120 pages and stayed blocked for 14+ h, so the new
+matching run could not finish. Instead, the **old lyrics minus the 51 wrong/doubtful matches** (357 songs kept;
+1 non-Hebrew skipped) were re-scored with windowed HebEMO (12 long songs no longer truncated).
+Weekly stream coverage falls from 66.7% to **60.9%** (range 37–73%).
+
+| Emotion | trend p, published series (AR(1)-corrected) | trend p, corrected corpus |
+|---|---|---|
+| fear (falling) | .004 | **< .001** |
+| disgust (rising) | .007 | .146 |
+| trust (falling) | .027 | .236 |
+| sadness (rising) | .322 | .147 |
+| joy, anger, anticipation | n.s. | n.s. |
+
+- **Only the decline in fear survives.** The disgust and trust trends depended on the wrong lyrics.
+- The Oct 2024 joy peak is unchanged (z = 2.95). It was always one correctly matched song (תמיד אוהב אותי), so it is still a single-song effect.
+- The classifier still saturates (98% of songs scored "negative"). Measurement validity (step 1 of the redesign) remains the main problem, whatever happens with matching.
