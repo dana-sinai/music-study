@@ -176,7 +176,7 @@ EV_DATES = {"a": ("October 7 attack", "Oct 7, 2023"), "b": ("Iranian attack (Tru
             "e": ("Iranian missile barrage (True Promise II)", "Oct 1, 2024"), "f": ("Yahya Sinwar killed", "Oct 17, 2024"),
             "g": ("Israel–Hezbollah ceasefire", "Nov 27, 2024"), "h": ("Gaza ceasefire takes effect", "Jan 19, 2025"),
             "i": ("Fighting in Gaza resumes", "Mar 18, 2025"), "j": ("12-day war with Iran", "Jun 13, 2025"),
-            "k": ("Gaza ceasefire and hostage return", "Oct 10, 2025")}
+            "k": ("Gaza peace deal signed; last living hostages released", "Oct 9, 2025")}
 drv = {(d["event"], d["series"]): d for d in EVD}
 a_lv = EVW[EVW.event == "a"].set_index("series").level_z
 ev_rows = []
@@ -319,7 +319,7 @@ weekly theme share is the stream-weighted proportion of scored listening carried
 in a straight line, we first described the shape of each series: half-year means, a locally weighted (LOWESS) trajectory, and
 its peak and trough. We tested whether a smooth curve (natural cubic spline with 4 <i>df</i>) fitted better than a straight
 line, using generalized least squares with first-order autoregressive (AR(1)) errors, because neighboring weeks are strongly
-correlated. <i>Anchor events.</i> For each of the events used in the earlier analysis, plus the October 2025 ceasefire (Table
+correlated. <i>Anchor events.</i> For each of the events used in the earlier analysis, plus the October 2025 Gaza peace deal (Table
 4), we computed the change in each series from the three chart weeks before the event to the three weeks starting with it.
 Its <i>p</i> value is the share of all other weeks in the series at which the same before–after change was as large or
 larger. This permutation-in-time test keeps the autocorrelation of the series, unlike tests that treat weeks as independent.
@@ -528,11 +528,12 @@ centered 8-week rolling mean. All panels share the 0–60% scale. Theme definiti
 <p><b>Figure 2</b></p>
 <p><i>Trajectories of Weekly Stream-Weighted Emotion Scores and Anchor Events</i></p>
 <p>[Insert Figure 2 here: figure2.png]</p>
-<p><i>Note.</i> Weekly scores standardized within each emotion (thin line) and their LOWESS trajectory (thick line). Dashed
-lines mark anchor events: (a) October 7 attack; (b) Iranian attack, April 13, 2024; (c) Nuseirat hostage rescue, June 8,
+<p><i>Note.</i> Each panel shows the weekly stream-weighted score of one emotion as a <i>z</i> score (standardized within
+that emotion); the shaded area is the deviation from the emotion’s mean over the 124 weeks. <i>M</i> and <i>SD</i> are the raw
+mean and standard deviation of each series. Dashed lines mark anchor events: (a) October 7 attack; (b) Iranian attack, April 13, 2024; (c) Nuseirat hostage rescue, June 8,
 2024; (d) pager attacks on Hezbollah, September 17, 2024; (e) Iranian missile barrage, October 1, 2024; (f) Sinwar killed,
 October 17, 2024; (g) Israel–Hezbollah ceasefire, November 27, 2024; (h) Gaza ceasefire, January 19, 2025; (i) fighting in
-Gaza resumes, March 18, 2025; (j) 12-day war with Iran, June 13, 2025; (k) Gaza ceasefire and hostage return, October 10,
+Gaza resumes, March 18, 2025; (j) 12-day war with Iran, June 13, 2025; (k) Gaza peace deal signed, October 9,
 2025.</p>
 <p></p>
 <p><b>Figure 3</b></p>

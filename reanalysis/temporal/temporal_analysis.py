@@ -25,7 +25,7 @@ CHARTS = R.parent / "lyrics_pipeline/data/spotify_israel_combined.csv"
 EMO = ["joy", "sadness", "anger", "fear", "trust", "disgust", "anticipation"]
 THEMES = ["war_security", "grief_loss", "faith_prayer", "hope_resilience", "nation_home", "romance_heartbreak",
           "party_hedonism"]
-EVENTS = [  # from the earlier manuscript, plus the October 2025 ceasefire (date to verify)
+EVENTS = [  # from the earlier manuscript, plus the October 2025 peace deal
     ("a", "2023-10-07", "October 7 attack"),
     ("b", "2024-04-13", "Iranian attack (True Promise I)"),
     ("c", "2024-06-08", "Nuseirat hostage rescue"),
@@ -36,7 +36,7 @@ EVENTS = [  # from the earlier manuscript, plus the October 2025 ceasefire (date
     ("h", "2025-01-19", "Gaza ceasefire takes effect"),
     ("i", "2025-03-18", "Fighting in Gaza resumes"),
     ("j", "2025-06-13", "12-day war with Iran (Rising Lion)"),
-    ("k", "2025-10-10", "Gaza ceasefire and hostage return"),
+    ("k", "2025-10-09", "Gaza peace deal signed; hostages released Oct 13"),
 ]
 K = 3  # weeks before / after
 

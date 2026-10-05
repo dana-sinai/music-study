@@ -49,7 +49,38 @@ def panel_fig(cols, name, ncol=2):
     fig.supylabel("z score", fontsize=8.5)
     fig.tight_layout(); fig.savefig(F / name, dpi=300, bbox_inches="tight"); plt.close(fig)
 
-panel_fig(EMO, "figure2.png")
+panel_fig(EMO, "supp_figure_emotions_lowess.png")
+
+# Figure 2: the earlier manuscript's z-score figure, redrawn from the audited series:
+# one coloured panel per emotion, weekly z score as a filled area, anchor events labelled on the top panel.
+COLORS = {"joy": "#FFD700", "sadness": "#4169E1", "anger": "#DC143C", "fear": "#8B008B", "trust": "#32CD32",
+          "disgust": "#8B4513", "anticipation": "#FF8C00"}
+SHORT = {"a": "Oct 7 attack", "b": "Iran attack (True Promise I)", "c": "Nuseirat rescue", "d": "Pager attacks",
+         "e": "Iran barrage (True Promise II)", "f": "Sinwar killed", "g": "Hezbollah ceasefire",
+         "h": "Gaza ceasefire", "i": "Gaza war resumes", "j": "12-day war (Rising Lion)", "k": "Gaza peace deal"}
+fig, axes = plt.subplots(len(EMO), 1, figsize=(11, 2.0 * len(EMO) + 1.6), sharex=True, sharey=True)
+for k, (ax, e) in enumerate(zip(axes, EMO)):
+    z = Z[e]
+    ax.fill_between(z.index, z, 0, color=COLORS[e], alpha=.55, linewidth=0)
+    ax.plot(z.index, z, color=COLORS[e], lw=1.6)
+    ax.axhline(0, color=INK, lw=.6, alpha=.4)
+    for code, d, _ in EVENTS:
+        x = max(pd.Timestamp(d), W.index[0])
+        ax.axvline(x, color="#6b6a66", lw=.8, ls=(0, (3, 2)), alpha=.7, zorder=0)
+        if k == 0:
+            ax.text(x, 1.04, f"({code}) {SHORT[code]}", transform=ax.get_xaxis_transform(), rotation=60,
+                    ha="left", va="bottom", fontsize=7.5, color=INK)
+    ax.set_ylim(-3.2, 3.2)
+    ax.set_ylabel("z", fontsize=8.5)
+    ax.text(.005, .9, LAB[e], transform=ax.transAxes, fontsize=10, fontweight="bold", color=INK, va="top")
+    ax.text(.995, .9, f"M = {W[e].mean():.3f}, SD = {W[e].std():.3f}".replace("0.", "."), transform=ax.transAxes,
+            ha="right", va="top", fontsize=7.5, color=MUTED)
+    ax.grid(axis="y", color="#e6e5e0", lw=.6)
+axes[-1].xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1, 4, 7, 10]))
+axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+axes[-1].tick_params(labelsize=8)
+fig.tight_layout(h_pad=.4)
+fig.savefig(F / "figure2.png", dpi=300, bbox_inches="tight"); plt.close(fig)
 panel_fig(THEMES, "supp_figure_themes_z.png")
 
 # heatmap
