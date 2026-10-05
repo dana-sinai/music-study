@@ -8,6 +8,8 @@ import json
 import re
 from pathlib import Path
 
+import pandas as pd
+
 HERE = Path(__file__).parent
 N = json.loads((HERE.parent / "manuscript_numbers.json").read_text(encoding="utf-8"))
 T = {(r["emotion"], r["series"]): r for r in N["trends"]}
@@ -90,7 +92,7 @@ for e in ["disgust", "anger", "sadness", "anticipation", "trust", "fear", "joy"]
     sat_rows.append([e.capitalize(), pct(N["saturation_gt90"][e], 0), pct(N["saturation_lt10"][e], 0),
                      pct(N["saturation_gt90"][e] + N["saturation_lt10"][e], 0)])
 tab2 = table(
-    4, f"Distribution of Song-Level HebEMO Probabilities (<i>N</i> = {N['scored']} Songs)",
+    6, f"Distribution of Song-Level HebEMO Probabilities (<i>N</i> = {N['scored']} Songs)",
     ["Emotion", "Songs with <i>p</i> &gt; .90", "Songs with <i>p</i> &lt; .10", "Near 0 or 1 (total)"],
     sat_rows,
     "HebEMO returns one probability per emotion from a separate binary classifier. "
@@ -104,7 +106,7 @@ for e in EMOS:
                        rho(b["spearman"]), p_cell(b["p_hac"]), p_cell(b["p_ar1"]),
                        f"{b['first6']:.3f}".lstrip("0") + " → " + f"{b['last6']:.3f}".lstrip("0")])
 tab3 = table(
-    3, f"Trends in Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus ({N['weeks']} Weeks)",
+    5, f"Trends in Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus ({N['weeks']} Weeks)",
     ["Emotion", "Earlier ρ", "Earlier naive <i>p</i>", "Earlier AR(1) <i>p</i>",
      "Audited ρ", "Audited HAC <i>p</i>", "Audited AR(1) <i>p</i>", "Audited mean, first → last 6 months"],
     trend_rows,
@@ -132,6 +134,83 @@ tab4 = table(
     "“Change due to top 5 songs” is the part of the first-to-last change produced by the five songs that contributed most "
     f"to it. For reference, the ten most-streamed songs of a typical week carry {N.get('top10_share_pct', 17.4):.1f}% of that week’s streams.")
 
+# ---------------------------------------------------------------- temporal analysis (reanalysis/temporal)
+TD = HERE.parent / "temporal"
+EMO = ["joy", "sadness", "anger", "fear", "trust", "disgust", "anticipation"]
+HY = pd.read_csv(TD / "half_year_means.csv", index_col=0)
+SH = pd.read_csv(TD / "trajectory_shapes.csv").set_index("series")
+EVW = pd.read_csv(TD / "event_windows.csv")
+EVD = json.loads((TD / "event_drivers.json").read_text(encoding="utf-8"))
+SERIES_LABEL = {"joy": "Joy", "sadness": "Sadness", "anger": "Anger", "fear": "Fear", "trust": "Trust",
+                "disgust": "Disgust", "anticipation": "Anticipation", **{k: v for k, v in {
+                    "war_security": "War and security", "grief_loss": "Grief and loss", "faith_prayer": "Faith and prayer",
+                    "hope_resilience": "Hope and resilience", "nation_home": "Nation and homeland",
+                    "romance_heartbreak": "Romance and heartbreak", "party_hedonism": "Partying and drinking"}.items()}}
+n_ev_tests = int(EVW.p_perm.notna().sum())
+n_ev_sig = int((EVW.p_perm < .05).sum())
+
+
+def sp(s):
+    p = SH.loc[s, "p_nonlinear"]
+    return "&lt; .001" if p < .001 else f"= {p:.3f}".replace("0.", ".")
+
+
+hy_rows = []
+for ser in EMO + ["war_security", "grief_loss", "faith_prayer", "hope_resilience", "nation_home", "romance_heartbreak",
+                  "party_hedonism"]:
+    vals = HY[ser]
+    scale = 1 if ser in EMO else 100
+    fmt = (lambda v: f"{v:.3f}".lstrip("0")) if ser in EMO else (lambda v: f"{v:.1f}")
+    p = SH.loc[ser, "p_nonlinear"]
+    hy_rows.append([SERIES_LABEL[ser]] + [fmt(v * scale) for v in vals] + ["&lt; .001" if p < .001 else f"{p:.3f}".lstrip("0")])
+tab_hy = table(
+    3, "Half-Year Means of Weekly Stream-Weighted Emotion Scores and Theme Shares",
+    ["Series"] + list(HY.index) + ["Non-linear <i>p</i>"],
+    hy_rows,
+    "Emotions are mean HebEMO probabilities; themes are percentages of scored streams. Non-linear <i>p</i> tests whether a "
+    "smooth curve (natural cubic spline, 4 <i>df</i>) fits the weekly series better than a straight line, with first-order "
+    "autoregressive errors. The last period covers five months.")
+
+EV_DATES = {"a": ("October 7 attack", "Oct 7, 2023"), "b": ("Iranian attack (True Promise I)", "Apr 13, 2024"),
+            "c": ("Nuseirat hostage rescue", "Jun 8, 2024"), "d": ("Pager attacks on Hezbollah", "Sep 17, 2024"),
+            "e": ("Iranian missile barrage (True Promise II)", "Oct 1, 2024"), "f": ("Yahya Sinwar killed", "Oct 17, 2024"),
+            "g": ("Israel–Hezbollah ceasefire", "Nov 27, 2024"), "h": ("Gaza ceasefire takes effect", "Jan 19, 2025"),
+            "i": ("Fighting in Gaza resumes", "Mar 18, 2025"), "j": ("12-day war with Iran", "Jun 13, 2025"),
+            "k": ("Gaza ceasefire and hostage return", "Oct 10, 2025")}
+drv = {(d["event"], d["series"]): d for d in EVD}
+a_lv = EVW[EVW.event == "a"].set_index("series").level_z
+ev_rows = []
+for code, (lab, date) in EV_DATES.items():
+    if code == "a":
+        shifts = ("Series start (no pre-event window). First 3 weeks: high fear (<i>z</i> = "
+                  f"{a_lv['fear']:.2f}), anticipation ({a_lv['anticipation']:.2f}), hope ({a_lv['hope_resilience']:.2f}), "
+                  f"grief ({a_lv['grief_loss']:.2f}); low disgust ({a_lv['disgust']:.2f}), faith ({a_lv['faith_prayer']:.2f})")
+        songs = "—"
+    else:
+        sub = EVW[(EVW.event == code) & (EVW.p_perm < .05)].sort_values("p_perm")
+        if sub.empty:
+            shifts, songs = "None at <i>p</i> &lt; .05", "—"
+        else:
+            shifts = "; ".join(f"{SERIES_LABEL[r.series]} {r.change_sd:+.2f} <i>SD</i> (<i>p</i> = {r.p_perm:.3f})".replace("0.0", ".0").replace("= 0.", "= .")
+                               for r in sub.itertuples())
+            names = []
+            for r in sub.itertuples():
+                for s in drv[(code, r.series)]["songs"][:2]:
+                    if s["share"] > .2 and f"<i>{s['track']}</i> ({s['artist']})" not in names:
+                        names.append(f"<i>{s['track']}</i> ({s['artist']})")
+            songs = "; ".join(names) or "—"
+    shifts = re.sub(r"(?<![\w-])-(\d)", "−\\1", shifts)
+    songs = songs.replace("ששון איפרם שאולוב", "Sasson Ifram Shaulov")
+    ev_rows.append([f"({code}) {lab}", date, shifts, songs])
+tab_ev = table(
+    4, "Change in Emotion and Theme Series Around Anchor Events",
+    ["Event", "Date", "Shifts, 3 weeks after vs. 3 weeks before", "Songs producing the shift"],
+    ev_rows,
+    "Shift is the change in the weekly series, in standard deviations of that series. <i>p</i> is the share of all other "
+    f"possible weeks with an equal or larger change (permutation in time). Across {n_ev_tests} event-by-series comparisons, "
+    f"{n_ev_sig} reached <i>p</i> &lt; .05, about the number expected by chance ({n_ev_tests * .05:.0f}). Songs listed produced "
+    "more than 20% of a shift.")
+
 # ---------------------------------------------------------------- text
 TITLE = ("From War Anthems to Party Songs: Population Affective Demand in Israeli Music Streaming "
          "During 28 Months of War")
@@ -147,14 +226,17 @@ reliably lyric-based measures can capture it.</p>
 <p><b>Methods:</b> We analyzed {N['entries']:,} weekly Spotify Top-200 entries for Israel ({N['weeks']} weeks, October
 2023–February 2026). Lyrics were retrieved with a verified artist match and audited against an earlier pipeline. Demand was
 measured in two ways, stream-weighted HebEMO emotion scores for {N['scored']} Hebrew songs ({pct(N['coverage_mean'])} of
-weekly streams) and stream-weighted shares of seven lyrical themes coded with a transparent word list. Trends were tested
-with autocorrelation-robust models and checked for dependence on single songs.</p>
+weekly streams) and stream-weighted shares of seven lyrical themes coded with a transparent word list. We described the
+trajectory of each series, tested changes around eleven anchor events against the same change at all other weeks, and
+traced every shift to the songs that produced it.</p>
 <p><b>Results:</b> Demand shifted from mobilizing content to hedonic content. Songs about war and security fell from
 {TH['war_security']['first6']:.1f}% to {TH['war_security']['last6']:.1f}% of listening, and songs of hope and of nation
 nearly disappeared. Songs about partying and drinking rose from {TH['party_hedonism']['first6']:.1f}% to
-{TH['party_hedonism']['last6']:.1f}%, a broad rise across many songs, while faith and romance remained stable. Among
-classifier-based emotions, only demand for fear-laden songs declined reliably (ρ = {rho(fv2['spearman'])}, AR(1) <i>p</i>
-{p_apa(fv2['p_ar1'])}). The audit showed that 11% of earlier matches carried another artist’s lyrics and that earlier
+{TH['party_hedonism']['last6']:.1f}%, a broad rise across many songs, while faith and romance remained stable. Emotion series
+followed non-linear paths: anger and trust peaked in summer 2024, joy rose to twice its usual level from October 2024 to March
+2025 and returned to baseline, and sadness rose to its highest level in the final months. Around the pager attacks, the
+Iranian missile barrage, and the killing of Sinwar (September–October 2024), demand rose for joyful and faith songs, driven
+mainly by one devotional song. The audit showed that 11% of earlier matches carried another artist’s lyrics and that earlier
 disgust and trust trends and event-anchored phases did not survive correction.</p>
 <p><b>Conclusion:</b> Streaming data trace a change in how the population regulated emotion over a prolonged war, from
 collective mobilization toward hedonic distraction. Lyric-level emotion classifiers are a weak instrument for this purpose;
@@ -188,7 +270,8 @@ discrete, widely shared events and documented effects on mental health (Levin et
 version of this analysis, classifier-based emotion series suggested rising sadness and disgust, falling fear and trust,
 distinct phases, and a burst of joy around military successes in late 2024. Here we audit and rebuild that analysis and
 add a transparent measure of lyrical content. We ask:</p>
-<p>(1) How did affective demand, the emotional and thematic content Israelis streamed, change over the war?<br>
+<p>(1) How did affective demand, the emotional and thematic content Israelis streamed, change over the war, and did it shift
+around major events?<br>
 (2) Which of these changes are robust to verified lyric matching, autocorrelation-robust inference, and dependence on
 single songs?<br>
 (3) How well do lyric-level emotion classifiers capture affective demand, compared with transparent content coding?</p>
@@ -232,18 +315,24 @@ contains the theme’s words at least once (war, grief), twice (faith, hope, nat
 weekly theme share is the stream-weighted proportion of scored listening carried by songs with that theme.</p>
 
 <h2><b>Statistical analysis</b></h2>
-<p>For each weekly series we report the Spearman correlation with time. We also report two tests of the linear slope that
-account for autocorrelation: ordinary least squares with Newey–West (HAC) standard errors (Newey &amp; West, 1987) and
-generalized least squares with first-order autoregressive errors (AR(1)), estimated with statsmodels (Seabold &amp;
-Perktold, 2010). We treat the AR(1) test as primary. To show how often independence-based tests mislead with series like
-these, we simulated 2,000 AR(1) series with coefficient .97 and no trend. We also applied the Chow break test used in the
-earlier analysis at every possible week.</p>
-<p>Coverage could change over time and bias the series, so we tested its trend in the same way. For every trend that survived,
-we decomposed the change between the first and last six months into song contributions, defined as the change in each
-song’s share of streams times its score. We then report the share of the change produced by the five largest contributors.
-For the joy peak we report the share of the peak window’s excess joy contributed by its leading song. Analyses used Python
-3.11 (pandas, statsmodels, scipy). All tests were two-sided, and given the exploratory aim, <i>p</i> values are reported
-without correction for multiple comparisons.</p>
+<p>We analyzed the weekly series in three complementary ways. <i>Trajectories.</i> Because affective demand need not change
+in a straight line, we first described the shape of each series: half-year means, a locally weighted (LOWESS) trajectory, and
+its peak and trough. We tested whether a smooth curve (natural cubic spline with 4 <i>df</i>) fitted better than a straight
+line, using generalized least squares with first-order autoregressive (AR(1)) errors, because neighboring weeks are strongly
+correlated. <i>Anchor events.</i> For each of the events used in the earlier analysis, plus the October 2025 ceasefire (Table
+4), we computed the change in each series from the three chart weeks before the event to the three weeks starting with it.
+Its <i>p</i> value is the share of all other weeks in the series at which the same before–after change was as large or
+larger. This permutation-in-time test keeps the autocorrelation of the series, unlike tests that treat weeks as independent.
+For each shift with <i>p</i> &lt; .05 we identified the songs that produced it, defined as the change in each song’s share of
+streams times its score. <i>Linear trends.</i> To compare with the earlier analysis, we also report Spearman correlations with
+time and two autocorrelation-robust tests of a linear slope: ordinary least squares with Newey–West (HAC) standard errors
+(Newey &amp; West, 1987) and generalized least squares with AR(1) errors.</p>
+<p>To show how often independence-based tests mislead with series like these, we simulated 2,000 AR(1) series with
+coefficient .97 and no trend, and applied the Chow break test used in the earlier analysis at every possible week. Coverage
+could change over time and bias the series, so we tested its trend as well. For the overall trends we report the share of the
+first-to-last change produced by the five largest song contributors. Analyses used Python 3.11 (pandas, statsmodels, scipy).
+All tests were two-sided. Given the exploratory aim, <i>p</i> values are not corrected for multiple comparisons; instead we
+report how many event comparisons would be expected to reach <i>p</i> &lt; .05 by chance.</p>
 """
 
 results = f"""
@@ -276,45 +365,71 @@ produced only {TH['party_hedonism']['top5']}% of it. Faith and prayer (about one
 <p><b>[Insert Table 2 about here]</b></p>
 <p><b>[Insert Figure 1 about here]</b></p>
 
-<h2><b>Emotional content of affective demand</b></h2>
+<h2><b>Emotional content of affective demand: trajectories</b></h2>
+<p>The emotion series did not change in straight lines (Table 3, Figures 2 and 3). A smooth curve fitted better than a line
+for anger (<i>p</i> {sp('anger')}), disgust (<i>p</i> {sp('disgust')}), anticipation (<i>p</i> {sp('anticipation')}), and
+trust (<i>p</i> {sp('trust')}). In the first months of the war, demand was highest for songs scored high on fear and
+anticipation, and lowest for songs scored high on disgust. Anticipation fell by spring 2024 and recovered only partly in late
+2025, while disgust rose over the first six months and then stayed high. Anger dipped in the winter of 2023–24, rose to a
+peak in August 2024, and then declined. Trust rose to a peak in September 2024, fell to its lowest point in May 2025, and
+partly recovered. Joy was flat until September 2024, rose to more than twice its usual level from October 2024 to March 2025
+(half-year mean {f"{HY.loc['Oct 2024–Mar 2025', 'joy']:.3f}".lstrip('0')} vs. {f"{HY.loc['Apr–Sep 2024', 'joy']:.3f}".lstrip('0')} before and
+{f"{HY.loc['Apr–Sep 2025', 'joy']:.3f}".lstrip('0')} after), and returned to baseline. Sadness stayed low through August 2024 and then rose in
+two steps to its highest level in the final five months ({f"{HY.loc['Oct 2025–Feb 2026', 'sadness']:.3f}".lstrip('0')}). Fear declined
+gradually, with a further drop in mid-2025.</p>
+<p>Two of these features need care. The joy rise was large, yet a smooth curve did not fit significantly better than a line
+(<i>p</i> {sp('joy')}), because a single song carried it (see below), and AR(1) models treat a long single-song excursion as
+persistent noise. The two sharpest fear peaks were also single releases. The April 2024 peak began on April 4, nine days
+before the Iranian attack, when Tuna’s <i>בין העיר לפרדס</i> entered the chart. The January 2025 peak fell in the week the
+Gaza ceasefire was announced and came mainly from <i>יש לך אותי</i> (Ravid Plotnik and Shai Tsabari).</p>
+<p><b>[Insert Table 3 about here]</b></p>
+<p><b>[Insert Figure 2 about here]</b></p>
+<p><b>[Insert Figure 3 about here]</b></p>
+
+<h2><b>Anchor events</b></h2>
+<p>Table 4 lists the change around each anchor event. Of {n_ev_tests} event-by-series comparisons, {n_ev_sig} reached
+<i>p</i> &lt; .05, the number expected by chance, so single shifts must be read with caution. One cluster nevertheless stands
+out because it recurred across three adjacent events and two measures. Around the pager attacks on Hezbollah,
+the Iranian missile barrage, and the killing of Yahya Sinwar (September 17–October 17, 2024), demand rose for songs scored
+high on joy and for songs coded as faith and prayer, and fell for songs scored high on anger. Two songs produced most of
+the joy and faith shifts: {joy_song}, a devotional song about God’s unconditional love, which entered the chart on September 26 and reached number
+one, and <i>לופ</i> (Osher Cohen). Thus the “joy” surge the earlier analysis linked to these events was, in content, a surge in
+demand for devotional reassurance. Later, partying and drinking songs rose when fighting in Gaza resumed in March 2025
+(mainly songs featuring Odeya) and again during the 12-day war with Iran in June 2025 (mainly Omer Adam’s <i>מלכת הדור</i>).
+The other events showed no shift beyond what occurs at ordinary weeks.</p>
+<p><b>[Insert Table 4 about here]</b></p>
+
+<h2><b>Linear trends and the earlier analysis</b></h2>
 <p>The weekly emotion series were highly autocorrelated (lag-1 autocorrelation .85–.98). Under these conditions, trend-free
 simulated series reached |ρ| &gt; .5 with naive <i>p</i> &lt; .001 in {pct(N['placebo_share'], 0)} of runs, and a Chow break
 placed at any week was “significant” at <i>p</i> &lt; .001 in 72–100% of positions for six of the seven emotions
-({pct(N['chow_anywhere']['fear'], 0)} for fear). The event-anchored phases of the earlier analysis are therefore not
-evidence of real breaks.</p>
-<p>Table 3 and Figure 2 compare the earlier and the audited series. In the earlier series, fear, disgust, and trust trends
-passed the AR(1) test. In the audited corpus, only fear did: demand for fear-laden songs declined from
+({pct(N['chow_anywhere']['fear'], 0)} for fear). The phase boundaries of the earlier analysis therefore cannot be confirmed
+with that test. Table 5 and Figure 4 compare the earlier and the audited series. In the earlier series, fear, disgust, and
+trust trends passed the AR(1) test; in the audited corpus, only fear did, declining from
 {f"{fv2['first6']:.3f}".lstrip('0')} to {f"{fv2['last6']:.3f}".lstrip('0')} (ρ = {rho(fv2['spearman'])}, AR(1) <i>p</i>
-{p_apa(fv2['p_ar1'])}). Disgust (<i>p</i> {p_apa(T[('disgust','v2')]['p_ar1'])}) and trust (<i>p</i>
-{p_apa(T[('trust','v2')]['p_ar1'])}) did not. The fear decline also appeared when the earlier lyrics were re-scored after
-removing the wrong matches.</p>
-<p><b>[Insert Table 3 about here]</b></p>
-<p><b>[Insert Figure 2 about here]</b></p>
-<p>The fear decline was carried by a handful of songs. Five songs, scored high on fear and streamed heavily early in the war,
-produced more than the entire first-to-last change ({N['fear_top5_share'] * 100:.0f}%): {fear_songs}. Weekly fear correlated
-with the share of war-themed songs (<i>r</i> = {r2(N['fear_war_r'])}; first differences <i>r</i> =
-{r2(N['fear_war_r_diff'])}), although at the song level war-themed songs did not score significantly higher on fear than other
-songs.</p>
-<p>The joy peak of late 2024 remained (<i>z</i> = {N['joy_peak_z']:.2f}, week of October 31, 2024), but
-{pct(N['joy_top_share'], 0)} of the excess joy in that window came from one song, {joy_song}, a devotional song about God’s
-unconditional love that HebEMO scores .999 on joy. It entered the chart in late September 2024 and reached number one.</p>
+{p_apa(fv2['p_ar1'])}). Five songs, scored high on fear and streamed heavily early in the war, produced the whole of this
+decline ({N['fear_top5_share'] * 100:.0f}%): {fear_songs}. Weekly fear correlated with the share of war-themed songs
+(<i>r</i> = {r2(N['fear_war_r'])}; first differences <i>r</i> = {r2(N['fear_war_r_diff'])}).</p>
+<p><b>[Insert Table 5 about here]</b></p>
+<p><b>[Insert Figure 4 about here]</b></p>
 
 <h2><b>How well the classifier captures affective demand</b></h2>
-<p>HebEMO rarely produced intermediate values (Table 4). Disgust exceeded .90 for {pct(N['saturation_gt90']['disgust'], 0)}
+<p>HebEMO rarely produced intermediate values (Table 6). Disgust exceeded .90 for {pct(N['saturation_gt90']['disgust'], 0)}
 of songs and anger for {pct(N['saturation_gt90']['anger'], 0)}, whereas fear, joy, and trust were below .10 for more than 97%
 of songs. The sentiment model labelled {pct(N['neg_sent_gt90'], 0)} of songs as negative, including love songs and dance hits.
 A weekly mean of such near-binary scores mostly reflects how many streams went to the few songs labelled 1, and much less
 the content of what people chose to hear.</p>
-<p><b>[Insert Table 4 about here]</b></p>
+<p><b>[Insert Table 6 about here]</b></p>
 """
 
 discussion = f"""
-<p>Over 28 months of war, the emotional content Israelis chose to stream changed in a clear direction. In the first months,
+<p>Over 28 months of war, the emotional content Israelis chose to stream changed in a clear overall direction, along a
+path with distinct turns. In the first months,
 a substantial part of listening went to songs about the war itself, to anthems of national unity, and to songs of hope and
 endurance. Two years later these had largely given way to songs about partying and drinking, while love songs and
-religious songs held a steady share. Among the classifier-based emotions, only demand for fear-laden songs declined
-reliably. The earlier picture of rising disgust, falling trust, and distinct phases did not survive verified lyrics and
-appropriate inference.</p>
+religious songs held a steady share. The emotion series rose and fell rather than moving in straight lines, and the
+clearest event-linked shift, in autumn 2024, was a turn to devotional songs. Of the earlier linear trends, only the decline
+in fear survived verified lyrics and inference suited to autocorrelated series.</p>
 
 <h2><b>From mobilization to hedonic distraction</b></h2>
 <p>Read as affective demand, the theme results describe a change in how the population used music to regulate emotion. Early
@@ -326,11 +441,16 @@ refer to the war at all. In the terms of Saarikallio and Erkkilä (2007), this r
 toward entertainment and diversion. It parallels the move toward more positive, contrasting music that Foramitti et al.
 (2025) observed during societal crises, although here it emerged gradually rather than as an immediate response. The rise
 was broad, carried by many songs and artists, which makes it unlikely to reflect one hit or one release.</p>
-<p>Two other observations fit this reading. The decline in demand for fear-laden songs followed the fading of a few songs
-streamed heavily in the first months, and weekly fear tracked the share of war-themed songs. The late-2024 joy peak, read
-earlier as collective euphoria around military events, was largely one devotional song about God’s unconditional love,
-<i>תמיד אוהב אותי</i>. Its rise to number one points to demand for reassurance and faith, a regulatory resource that the
-stable share of religious songs shows was in steady use throughout the war.</p>
+<p>The trajectories add texture to this shift. Demand did not move steadily. Anticipation and fear dominated the
+first months, anger and trust rose through 2024 and then receded, and sadness rose late, in the final year of the war. The
+anchor events show where shorter shifts occurred. The clearest is the autumn of 2024. During the pager attacks, the Iranian
+missile barrage, and the killing of Sinwar, Israelis turned in large numbers to <i>תמיד אוהב אותי</i>, a devotional song about
+God’s unconditional love, and to other faith songs. The earlier analysis read this as collective euphoria. In content, it
+was demand for reassurance and faith at a time of direct state-on-state threat, a regulatory resource that the steady share
+of religious songs shows was in use throughout the war. Later escalations, the resumption of fighting in Gaza and the
+12-day war with Iran, coincided instead with more demand for party songs, consistent with the general move toward hedonic
+distraction. Because one or two releases produced each of these shifts, and because release dates are set by artists and
+labels, the timing alone cannot show that the events caused them.</p>
 
 <h2><b>Measuring affective demand</b></h2>
 <p>The audit shows why content measurement matters. Title-only matching attached another artist’s lyrics to 11% of songs,
@@ -352,7 +472,7 @@ helpline contacts, or service use, to test whether particular shifts in demand p
 <p><i>Limitations</i></p>
 <p>Demand is observed only through one platform’s Top 200. Spotify users skew younger, Arabic-language music is excluded,
 and charts reflect recommendation algorithms and new releases as well as listeners’ choices; supply and demand cannot be
-fully separated. About a third of weekly streams had no scored lyrics, mostly international songs. Lyrics are only part
+fully separated, and new releases can coincide with events by chance. About a third of weekly streams had no scored lyrics, mostly international songs. Lyrics are only part
 of what a song offers; melody, tempo, and the performer also carry emotional meaning. The theme word list is our own and
 was refined by inspecting matches; it is published in full so others can test alternatives. We did not collect human
 emotion ratings, so we can show that HebEMO behaves implausibly on lyrics but cannot quantify its error. {S['review']}
@@ -406,8 +526,24 @@ figures = f"""
 centered 8-week rolling mean. All panels share the 0–60% scale. Theme definitions are in Supplementary Section B.</p>
 <p></p>
 <p><b>Figure 2</b></p>
-<p><i>Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus</i></p>
+<p><i>Trajectories of Weekly Stream-Weighted Emotion Scores and Anchor Events</i></p>
 <p>[Insert Figure 2 here: figure2.png]</p>
+<p><i>Note.</i> Weekly scores standardized within each emotion (thin line) and their LOWESS trajectory (thick line). Dashed
+lines mark anchor events: (a) October 7 attack; (b) Iranian attack, April 13, 2024; (c) Nuseirat hostage rescue, June 8,
+2024; (d) pager attacks on Hezbollah, September 17, 2024; (e) Iranian missile barrage, October 1, 2024; (f) Sinwar killed,
+October 17, 2024; (g) Israel–Hezbollah ceasefire, November 27, 2024; (h) Gaza ceasefire, January 19, 2025; (i) fighting in
+Gaza resumes, March 18, 2025; (j) 12-day war with Iran, June 13, 2025; (k) Gaza ceasefire and hostage return, October 10,
+2025.</p>
+<p></p>
+<p><b>Figure 3</b></p>
+<p><i>Monthly Emotion Scores and Theme Shares Relative to Their Means</i></p>
+<p>[Insert Figure 3 here: figure3.png]</p>
+<p><i>Note.</i> Each cell is the monthly mean of the weekly <i>z</i> score of that series; red is above and blue below the
+series mean. Dashed lines mark anchor events (a)–(k), as in Figure 2.</p>
+<p></p>
+<p><b>Figure 4</b></p>
+<p><i>Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus</i></p>
+<p>[Insert Figure 4 here: figure4.png]</p>
 <p><i>Note.</i> Four emotions whose trends passed the AR(1) test in at least one version (fear, disgust, trust) or were
 described as rising in the earlier analysis (sadness). Gray dashed line: earlier pipeline (408 songs); blue line: audited
 pipeline ({N['scored']} songs). Only the fear decline is significant in the audited corpus (AR(1) <i>p</i> {p_apa(fv2['p_ar1'])}).</p>
@@ -478,7 +614,7 @@ parts = [
     "<h1><b>Statements and Declarations</b></h1>", declarations,
     "<h1><b>References</b></h1>",
     "".join(f'<p style="padding-left:36pt;text-indent:-36pt;">{r}</p>' for r in refs),
-    "<h1><b>Tables</b></h1>", tab1, tab4, tab3, tab2,
+    "<h1><b>Tables</b></h1>", tab1, tab4, tab_hy, tab_ev, tab3, tab2,
     "<h1><b>Figures</b></h1>", figures,
     "<h1><b>Supplementary Materials</b></h1>", supp,
     "</body></html>",

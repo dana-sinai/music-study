@@ -1,0 +1,191 @@
+[
+ {
+  "series": "party_hedonism",
+  "event": "j",
+  "label": "12-day war with Iran (Rising Lion)",
+  "change": 0.07133731649831401,
+  "p": 0.008403361344537815,
+  "songs": [
+   {
+    "track": "מלכת הדור",
+    "artist": "Omer Adam",
+    "contribution": 0.05543862932526322,
+    "share": 0.7771336524352376
+   },
+   {
+    "track": "היה טוב",
+    "artist": "Omer Adam",
+    "contribution": 0.021048348250720935,
+    "share": 0.2950538271399432
+   },
+   {
+    "track": "איפה שתגידי",
+    "artist": "Omer Adam",
+    "contribution": 0.016646192888769357,
+    "share": 0.23334481454965855
+   }
+  ]
+ },
+ {
+  "series": "joy",
+  "event": "e",
+  "label": "Iranian missile barrage (True Promise II)",
+  "change": 0.0238941029650436,
+  "p": 0.01680672268907563,
+  "songs": [
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "ששון איפרם שאולוב",
+    "contribution": 0.024400383458131437,
+    "share": 1.0211885122378739
+   },
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "יאיר אלייצור",
+    "contribution": 0.0012424156601157233,
+    "share": 0.05199674839994382
+   },
+   {
+    "track": "אחרי כל השנים",
+    "artist": "Omer Adam",
+    "contribution": -0.0007357578848522714,
+    "share": -0.03079244640104986
+   }
+  ]
+ },
+ {
+  "series": "anger",
+  "event": "f",
+  "label": "Sinwar killed",
+  "change": -0.047053848896273065,
+  "p": 0.025210084033613446,
+  "songs": [
+   {
+    "track": "צ'יק צ'ק",
+    "artist": "Static",
+    "contribution": 0.004945688179186992,
+    "share": -0.1051069847673759
+   },
+   {
+    "track": "לופ",
+    "artist": "Osher Cohen",
+    "contribution": 0.004912252897032954,
+    "share": -0.10439640990605598
+   },
+   {
+    "track": "שוב אני בדד",
+    "artist": "Eyal Golan",
+    "contribution": -0.004772581624017073,
+    "share": 0.1014280815696477
+   }
+  ]
+ },
+ {
+  "series": "joy",
+  "event": "f",
+  "label": "Sinwar killed",
+  "change": 0.023004976079121844,
+  "p": 0.025210084033613446,
+  "songs": [
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "ששון איפרם שאולוב",
+    "contribution": 0.019848959770103352,
+    "share": 0.8628115804961554
+   },
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "יאיר אלייצור",
+    "contribution": 0.004188153536536821,
+    "share": 0.18205424435706244
+   },
+   {
+    "track": "‏שלווה בארמונותייך",
+    "artist": "Ravid Plotnik",
+    "contribution": -0.0012661455844470496,
+    "share": -0.05503790049997663
+   }
+  ]
+ },
+ {
+  "series": "faith_prayer",
+  "event": "e",
+  "label": "Iranian missile barrage (True Promise II)",
+  "change": 0.04824901248122253,
+  "p": 0.025210084033613446,
+  "songs": [
+   {
+    "track": "לופ",
+    "artist": "Osher Cohen",
+    "contribution": 0.025051123648714327,
+    "share": 0.5192048989285265
+   },
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "ששון איפרם שאולוב",
+    "contribution": 0.024418975815592193,
+    "share": 0.5061031212834782
+   },
+   {
+    "track": "רק הזמן",
+    "artist": "Jasmin Moallem",
+    "contribution": 0.005075613483122843,
+    "share": 0.10519621484684619
+   }
+  ]
+ },
+ {
+  "series": "party_hedonism",
+  "event": "i",
+  "label": "Fighting in Gaza resumes",
+  "change": 0.05937294629241918,
+  "p": 0.03361344537815126,
+  "songs": [
+   {
+    "track": "חולמת",
+    "artist": "Odeya",
+    "contribution": 0.020991042445983207,
+    "share": 0.35354557516144985
+   },
+   {
+    "track": "פרפרים",
+    "artist": "Odeya",
+    "contribution": 0.015846190664233286,
+    "share": 0.2668924426655336
+   },
+   {
+    "track": "רשימת קניות",
+    "artist": "STILLA, Ness, Odeya",
+    "contribution": 0.013976961717596867,
+    "share": 0.23540960303298047
+   }
+  ]
+ },
+ {
+  "series": "faith_prayer",
+  "event": "d",
+  "label": "Pager attacks on Hezbollah",
+  "change": 0.037963119017620506,
+  "p": 0.04201680672268908,
+  "songs": [
+   {
+    "track": "לופ",
+    "artist": "Osher Cohen",
+    "contribution": 0.024306535105469314,
+    "share": 0.640267073266227
+   },
+   {
+    "track": "תמיד אוהב אותי",
+    "artist": "ששון איפרם שאולוב",
+    "contribution": 0.009508131897685845,
+    "share": 0.25045707896847647
+   },
+   {
+    "track": "לב שביר",
+    "artist": "Eden Hason, ששון איפרם שאולוב",
+    "contribution": 0.005038499230904176,
+    "share": 0.1327208975786623
+   }
+  ]
+ }
+]
