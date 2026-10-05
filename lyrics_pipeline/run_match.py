@@ -111,8 +111,11 @@ def main():
     charts = pd.read_csv(DATA / "spotify_israel_combined.csv")
     amap = pd.read_csv(DATA / "artist_hebrew_mapping_combined.csv")
     mapping = dict(zip(amap.original_artist, amap.hebrew_artist))
-    ov_path = DATA / "manual_overrides.csv"
-    overrides = pd.read_csv(ov_path).set_index("spotify_uri") if ov_path.exists() else pd.DataFrame()
+    # manual decisions: data/manual_overrides.csv (local) wins over the committed manual_overrides.csv
+    ov_path = next((p for p in [DATA / "manual_overrides.csv", HERE / "manual_overrides.csv"] if p.exists()), None)
+    overrides = (pd.read_csv(ov_path).drop_duplicates("spotify_uri").set_index("spotify_uri")
+                 if ov_path else pd.DataFrame())
+    overrides = overrides[overrides.get("action", pd.Series(dtype=str)).isin(["url", "none"])] if len(overrides) else overrides
 
     songs = song_universe(charts, mapping)
     if args.uri:
@@ -142,8 +145,30 @@ def main():
                                      "peak_rank", "first_week", "selection"]}
             if s.uri in overrides.index:
                 o = overrides.loc[s.uri]
-                row.update(status=f"override:{o.action}", shironet_urls=o.get("shironet_url", ""),
-                           note=o.get("note", ""))
+                row.update(status=f"manual_{o.action}", shironet_urls=o.get("shironet_url", ""), note=o.get("note", ""))
+                if o.action == "url" and pass_no == 2:
+                    texts = []
+                    for url in str(o.shironet_url).split(" | "):
+                        if url in old_lyrics:
+                            texts.append(old_lyrics[url])
+                            continue
+                        try:
+                            page = parse_lyrics_page(client.get(url))
+                        except BlockedError:
+                            go_offline(client)
+                            texts = None
+                            break
+                        except FileNotFoundError:
+                            texts = None
+                            break
+                        texts.append(page["lyrics"] if page else "")
+                    if texts and all(texts):
+                        fname = s.uri.split(":")[-1] + ".txt"
+                        (OUT / "lyrics" / fname).write_text("\n\n".join(texts), encoding="utf-8")
+                        row.update(status="accepted", lyrics_file=fname, lyrics_chars=sum(map(len, texts)),
+                                   match_source="manual")
+                    else:
+                        row["status"] = "lyrics_not_fetched"
                 rows.append(row)
                 continue
             parts = title_parts(s.track_name)
@@ -219,7 +244,7 @@ def main():
     with open(OUT / "candidates.jsonl", "w", encoding="utf-8") as f:
         for c in cand_log:
             f.write(json.dumps(c, ensure_ascii=False, default=str) + "\n")
-    q = res[~res.status.isin(["accepted"]) & ~res.status.str.startswith("override")].copy()
+    q = res[~res.status.isin(["accepted", "manual_none"])].copy()
     q["shironet_url_correct"], q["action"], q["reviewer_note"] = "", "", ""
     q.sort_values("total_streams", ascending=False).to_csv(OUT / "review_queue.csv", index=False, encoding="utf-8-sig")
 
