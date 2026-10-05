@@ -46,6 +46,15 @@ def song_universe(charts: pd.DataFrame, mapping: dict) -> pd.DataFrame:
     return g[g.selection.notna()].sort_values("total_streams", ascending=False).reset_index(drop=True)
 
 
+def go_offline(client: Client) -> None:
+    """Shironet refused us: stop all network requests for this run (don't hammer the site),
+    finish everything that can be done from cached pages, and leave the rest for a rerun."""
+    if not client.offline:
+        client.offline = True
+        print("\n*** Shironet is blocking requests. Finishing from saved pages only; "
+              "rerun later (e.g. tomorrow) to fetch the rest - saved pages are reused. ***\n", flush=True)
+
+
 def seed_from_old_run(mapping: dict, known: dict) -> dict:
     """Use the Feb 2026 matches that pass the NEW rule (artist-gated) to
     (a) learn Shironet artist IDs and (b) reuse their lyrics instead of refetching.
@@ -158,8 +167,9 @@ def main():
                         status = "review"
                     picks.append(b)
             except BlockedError as e:
-                status, picks = "blocked", []
+                status, picks = "not_cached", []
                 row["note"] = str(e)
+                go_offline(client)
             except FileNotFoundError:
                 status, picks = "not_cached", []
             row.update(status=status, n_parts=len(parts),
@@ -180,9 +190,19 @@ def main():
                         if p["url"] in old_lyrics:  # same Shironet page as a verified old match: no refetch
                             texts.append(old_lyrics[p["url"]])
                             continue
-                        page = parse_lyrics_page(client.get(p["url"]))
+                        try:
+                            page = parse_lyrics_page(client.get(p["url"]))
+                        except BlockedError:
+                            go_offline(client)
+                            texts = None
+                            break
+                        except FileNotFoundError:  # offline after a block: fetch on the next run
+                            texts = None
+                            break
                         texts.append(page["lyrics"] if page else "")
-                    if all(texts):
+                    if texts is None:
+                        row["status"] = "lyrics_not_fetched"
+                    elif all(texts):
                         fname = s.uri.split(":")[-1] + ".txt"
                         (OUT / "lyrics" / fname).write_text("\n\n".join(texts), encoding="utf-8")
                         row["lyrics_file"], row["lyrics_chars"] = fname, sum(map(len, texts))
@@ -207,6 +227,9 @@ def main():
     share = res.groupby("status").total_streams.sum() / tot
     print("\nShare of ALL chart streams by status:\n" + share.round(3).to_string())
     print(f"\nreview queue: {len(q)} songs -> {OUT/'review_queue.csv'}")
+    todo = res.status.isin(["not_cached", "lyrics_not_fetched"]).sum()
+    if todo:
+        print(f"\n{todo} songs still need pages from Shironet. Run the same command again later to finish them.")
 
 
 if __name__ == "__main__":
