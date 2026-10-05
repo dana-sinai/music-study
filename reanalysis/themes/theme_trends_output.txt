@@ -1,0 +1,31 @@
+             theme  mean_share  first_6mo  last_6mo  change_per_year  p_ar1    rho
+      war_security       0.175      0.226     0.127           -0.054  0.026 -0.564
+        grief_loss       0.006      0.015     0.003           -0.004  0.014 -0.635
+      faith_prayer       0.134      0.121     0.160            0.018  0.318  0.504
+   hope_resilience       0.058      0.105     0.045           -0.034  0.029 -0.659
+       nation_home       0.023      0.051     0.000           -0.033  0.000 -0.933
+romance_heartbreak       0.385      0.318     0.363            0.037  0.422  0.202
+    party_hedonism       0.163      0.070     0.244            0.107  0.000  0.884
+
+Coverage drift (share of weekly streams with scored lyrics):
+  first 6 mo 61.0%, last 6 mo 69.3%, per-year +0.017, AR1 p=0.184
+
+Song-level validity: mean HebEMO fear by theme (Mann-Whitney vs songs without the theme)
+  war_security         n= 91  fear 0.059 vs 0.012  p=0.105
+  grief_loss           n=  7  fear 0.000 vs 0.021  p=0.171
+  faith_prayer         n= 60  fear 0.027 vs 0.020  p=0.354
+  hope_resilience      n= 29  fear 0.038 vs 0.020  p=0.273
+  nation_home          n= 10  fear 0.000 vs 0.021  p=0.208
+  romance_heartbreak   n=142  fear 0.009 vs 0.026  p=0.000
+  party_hedonism       n= 69  fear 0.001 vs 0.024  p=0.000
+
+Weekly: HebEMO fear vs war_security share  r = 0.64  (differenced r = 0.36 )
+
+December vs other months (holiday seasonality):
+war_security          0.014
+grief_loss           -0.001
+faith_prayer          0.002
+hope_resilience      -0.006
+nation_home           0.008
+romance_heartbreak   -0.011
+party_hedonism       -0.018
