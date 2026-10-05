@@ -14,12 +14,13 @@ Usage: python score_hebemo.py            -> out/song_emotions_v2.csv
 from __future__ import annotations
 
 import re
+import os
 from pathlib import Path
 
 import pandas as pd
 
 HERE = Path(__file__).parent
-OUT = HERE / "out"
+OUT = Path(os.environ.get("PIPELINE_OUT", HERE / "out"))
 EMOTIONS = ["joy", "sadness", "anger", "fear", "trust", "disgust", "surprise", "anticipation"]
 SECTION = re.compile(r"^\s*(פזמון|בית|גשר|מעבר|chorus|verse|bridge|intro|outro)\s*\d*\s*:?\s*$", re.I | re.M)
 REPEAT = re.compile(r"\(?\s*[xX×]\s*\d+\s*\)?|\(?\s*\d+\s*[xX×]\s*\)?")

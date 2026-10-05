@@ -3,6 +3,7 @@ published (2026-02) version.
 
 Usage: python build_series.py   -> out/weekly_emotion_scores_v2.csv, printed comparison
 """
+import os
 from pathlib import Path
 
 import numpy as np
@@ -10,7 +11,7 @@ import pandas as pd
 from scipy import stats
 
 HERE = Path(__file__).parent
-DATA, OUT = HERE / "data", HERE / "out"
+DATA, OUT = HERE / "data", Path(os.environ.get("PIPELINE_OUT", HERE / "out"))
 E = ["joy", "sadness", "anger", "fear", "trust", "disgust", "anticipation"]
 
 
