@@ -24,7 +24,7 @@ for ax, e, lab in zip(axes.flat, ["fear", "disgust", "trust", "sadness"], ["Fear
 for ax in axes[1]: plt.setp(ax.get_xticklabels(), rotation=0, fontsize=8)
 h, l = axes[0, 0].get_legend_handles_labels()
 fig.legend(h, l, loc="lower center", ncol=2, frameon=False, fontsize=8.5, bbox_to_anchor=(.5, -.01))
-fig.tight_layout(rect=(0, .05, 1, 1)); fig.savefig(F / "figure1.png", dpi=300, bbox_inches="tight"); plt.close(fig)
+fig.tight_layout(rect=(0, .05, 1, 1)); fig.savefig(F / "figure2.png", dpi=300, bbox_inches="tight"); plt.close(fig)
 
 themes = [("war_security", "War and security"), ("nation_home", "Nation and homeland"), ("hope_resilience", "Hope and resilience"),
           ("party_hedonism", "Party and drinking"), ("romance_heartbreak", "Romance and heartbreak"), ("faith_prayer", "Faith and prayer")]
@@ -37,5 +37,5 @@ for ax, (k, lab) in zip(axes.flat, themes):
     ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=[1])); ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 for ax in axes[:, 0]: ax.set_ylabel("% of weekly streams", fontsize=8)
 for ax in axes[1]: plt.setp(ax.get_xticklabels(), fontsize=7.5)
-fig.tight_layout(); fig.savefig(F / "figure2.png", dpi=300, bbox_inches="tight"); plt.close(fig)
+fig.tight_layout(); fig.savefig(F / "figure1.png", dpi=300, bbox_inches="tight"); plt.close(fig)
 print("ok")

@@ -45,24 +45,28 @@ S = N["status"]
 SS = N["status_stream_share"]
 
 # ---------------------------------------------------------------- tables
+def cell(content, top=False, bottom=False, align="center"):
+    w = f"{1 if top else 0}pt 0 {1 if bottom else 0}pt 0"
+    a = "text-align:center;" if align == "center" else ""
+    return f'<td style="border-style:solid;border-color:#000;border-width:{w};{a}">{content}</td>'
+
+
 def table(num, title, head, rows, note, widths=None):
-    th = "".join(f'<td style="border-top:1px solid #000;border-bottom:1px solid #000;"><b>{h}</b></td>'
-                 for h in head)
+    """APA 7 table: bold number, italic title, rules above and below the header and below the last row only."""
+    th = "".join(cell(h, top=True, bottom=True, align="left" if j == 0 else "center") for j, h in enumerate(head))
     body = []
     for i, r in enumerate(rows):
         last = i == len(rows) - 1
-        bb = "border-bottom:1px solid #000;" if last else ""
-        cells = "".join(f'<td style="{bb}{"text-align:left;" if j == 0 else "text-align:center;"}">{c}</td>'
-                        for j, c in enumerate(r))
-        body.append(f"<tr>{cells}</tr>")
-    return (f'<p><b>Table {num}</b></p><p><i>{title}</i></p>'
-            f'<table style="border-collapse:collapse;font-family:\'Times New Roman\';font-size:11pt;">'
+        body.append("<tr>" + "".join(cell(c, bottom=last, align="left" if j == 0 else "center")
+                                     for j, c in enumerate(r)) + "</tr>")
+    return (f'<p style="line-height:2;"><b>Table {num}</b></p><p style="line-height:2;"><i>{title}</i></p>'
+            f'<table style="border-collapse:collapse;border:none;font-family:\'Times New Roman\';font-size:12pt;">'
             f"<tr>{th}</tr>{''.join(body)}</table>"
             f'<p><i>Note.</i> {note}</p><p></p>')
 
 
 tab1 = table(
-    1, "Lyric retrieval and matching: earlier pipeline versus audited pipeline",
+    1, "Lyric Retrieval and Matching in the Earlier and the Audited Pipeline",
     ["Feature", "Earlier pipeline", "Audited pipeline"],
     [
         ["Songs considered", "Hebrew songs on the chart (number not logged)", f"{N['israeli_songs']} Israeli songs (of {N['tracks']:,} charted tracks)"],
@@ -86,11 +90,11 @@ for e in ["disgust", "anger", "sadness", "anticipation", "trust", "fear", "joy"]
     sat_rows.append([e.capitalize(), pct(N["saturation_gt90"][e], 0), pct(N["saturation_lt10"][e], 0),
                      pct(N["saturation_gt90"][e] + N["saturation_lt10"][e], 0)])
 tab2 = table(
-    2, f"Distribution of song-level HebEMO probabilities (N = {N['scored']} songs)",
-    ["Emotion", "Songs with p &gt; .90", "Songs with p &lt; .10", "Near 0 or 1 (total)"],
+    4, f"Distribution of Song-Level HebEMO Probabilities (<i>N</i> = {N['scored']} Songs)",
+    ["Emotion", "Songs with <i>p</i> &gt; .90", "Songs with <i>p</i> &lt; .10", "Near 0 or 1 (total)"],
     sat_rows,
     "HebEMO returns one probability per emotion from a separate binary classifier. "
-    f"In addition, the heBERT sentiment model labelled {pct(N['neg_sent_gt90'], 0)} of songs as negative with p &gt; .90. "
+    f"In addition, the heBERT sentiment model labelled {pct(N['neg_sent_gt90'], 0)} of songs as negative with <i>p</i> &gt; .90. "
     "Surprise is omitted (all values below .01).")
 
 trend_rows = []
@@ -100,7 +104,7 @@ for e in EMOS:
                        rho(b["spearman"]), p_cell(b["p_hac"]), p_cell(b["p_ar1"]),
                        f"{b['first6']:.3f}".lstrip("0") + " → " + f"{b['last6']:.3f}".lstrip("0")])
 tab3 = table(
-    3, f"Linear trends in weekly stream-weighted emotion scores, earlier versus audited corpus ({N['weeks']} weeks)",
+    3, f"Trends in Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus ({N['weeks']} Weeks)",
     ["Emotion", "Earlier ρ", "Earlier naive <i>p</i>", "Earlier AR(1) <i>p</i>",
      "Audited ρ", "Audited HAC <i>p</i>", "Audited AR(1) <i>p</i>", "Audited mean, first → last 6 months"],
     trend_rows,
@@ -119,7 +123,7 @@ for k, lab in theme_label.items():
     th_rows.append([lab, f"{t['n_songs']} ({t['pct_songs']:.1f})", f"{t['first6']:.1f}", f"{t['last6']:.1f}",
                     f"{sign}{abs(t['per_year']):.1f}", p_cell(t["p"]) if t["p"] >= .001 else "&lt; .001", f"{t['top5']}%"])
 tab4 = table(
-    4, "Stream-weighted share of listening carried by songs with each lyrical theme",
+    2, "Stream-Weighted Share of Listening Carried by Songs With Each Lyrical Theme",
     ["Theme", "Songs, <i>n</i> (%)", "First 6 months (%)", "Last 6 months (%)", "Change per year (points)",
      "AR(1) <i>p</i>", "Change due to top 5 songs"],
     th_rows,
@@ -129,61 +133,65 @@ tab4 = table(
     f"to it. For reference, the ten most-streamed songs of a typical week carry {N.get('top10_share_pct', 17.4):.1f}% of that week’s streams.")
 
 # ---------------------------------------------------------------- text
-TITLE = ("What Israelis Streamed During 28 Months of War: An Audited, Stream-Weighted Analysis of "
-         "Hebrew Popular-Song Lyrics")
+TITLE = ("From War Anthems to Party Songs: Population Affective Demand in Israeli Music Streaming "
+         "During 28 Months of War")
 
 fear_songs = "; ".join(f"<i>{t}</i> ({a})" for t, a, _ in N["fear_top5"])
 joy_song = f"<i>{N['joy_top_song'][0]}</i> (Sasson Ifram Shaulov)"
 
 abstract = f"""
-<p><b>Objective:</b> Stream-weighted emotion scores of song lyrics have been proposed as a passive, continuous index of
-population mood. We tested how far such an index can be trusted, using Israel’s Spotify charts during the war that began
-on October 7, 2023.</p>
-<p><b>Methods:</b> We analyzed {N['entries']:,} weekly Top-200 entries ({N['weeks']} weeks, October 2023–February 2026).
-We first audited an earlier version of the analysis, then rebuilt lyric retrieval with a required artist match,
-retrieved and scored {N['scored']} Hebrew lyrics with the HebEMO emotion models (covering {pct(N['coverage_mean'])} of
-weekly streams), and coded seven lyrical themes with a transparent word list. Trends were tested with models that allow for
-the strong week-to-week autocorrelation of chart data, and every result was checked for dependence on a few songs.</p>
-<p><b>Results:</b> In the earlier analysis, 11% of matched songs carried another artist’s lyrics. Rising disgust, falling
-trust, and the event-anchored phases did not survive correction. In simulations, pure noise with the same autocorrelation
-reached |ρ| &gt; .5 at <i>p</i> &lt; .001 in {pct(N['placebo_share'], 0)} of runs. HebEMO placed most songs near 0 or 1, and
-labelled {pct(N['neg_sent_gt90'], 0)} as negative. One trend held: fear declined (ρ = {rho(fv2['spearman'])},
-AR(1) <i>p</i> {p_apa(fv2['p_ar1'])}), but five songs accounted for all of it. The clearest change was in repertoire.
-Songs about war and security fell from {TH['war_security']['first6']:.1f}% to {TH['war_security']['last6']:.1f}% of listening,
-and songs about partying and drinking rose from {TH['party_hedonism']['first6']:.1f}% to {TH['party_hedonism']['last6']:.1f}%.</p>
-<p><b>Conclusion:</b> Lyric-emotion indices built from charts are dominated by a few hits and by the behavior of the classifier.
-They should not be read as measures of population mood without song-level validation and an external criterion.
-Transparent theme coding of what people streamed is a more defensible description of cultural response to war.</p>
-<p><i>Keywords:</i> music streaming, song lyrics, emotion recognition, Hebrew, war, cultural analytics, reproducibility</p>
+<p><b>Objective:</b> Listening to music is a regulatory act: people choose songs to match, process, or change how they feel.
+Aggregated across a population, streaming choices therefore form a record of <i>affective demand</i>, the emotional content
+people reach for. We asked how affective demand in Israel changed during the war that began on October 7, 2023, and how
+reliably lyric-based measures can capture it.</p>
+<p><b>Methods:</b> We analyzed {N['entries']:,} weekly Spotify Top-200 entries for Israel ({N['weeks']} weeks, October
+2023–February 2026). Lyrics were retrieved with a verified artist match and audited against an earlier pipeline. Demand was
+measured in two ways, stream-weighted HebEMO emotion scores for {N['scored']} Hebrew songs ({pct(N['coverage_mean'])} of
+weekly streams) and stream-weighted shares of seven lyrical themes coded with a transparent word list. Trends were tested
+with autocorrelation-robust models and checked for dependence on single songs.</p>
+<p><b>Results:</b> Demand shifted from mobilizing content to hedonic content. Songs about war and security fell from
+{TH['war_security']['first6']:.1f}% to {TH['war_security']['last6']:.1f}% of listening, and songs of hope and of nation
+nearly disappeared. Songs about partying and drinking rose from {TH['party_hedonism']['first6']:.1f}% to
+{TH['party_hedonism']['last6']:.1f}%, a broad rise across many songs, while faith and romance remained stable. Among
+classifier-based emotions, only demand for fear-laden songs declined reliably (ρ = {rho(fv2['spearman'])}, AR(1) <i>p</i>
+{p_apa(fv2['p_ar1'])}). The audit showed that 11% of earlier matches carried another artist’s lyrics and that earlier
+disgust and trust trends and event-anchored phases did not survive correction.</p>
+<p><b>Conclusion:</b> Streaming data trace a change in how the population regulated emotion over a prolonged war, from
+collective mobilization toward hedonic distraction. Lyric-level emotion classifiers are a weak instrument for this purpose;
+transparent content coding with verified lyrics is a more defensible measure of affective demand.</p>
+<p><i>Keywords:</i> affective demand, emotion regulation, music streaming, song lyrics, war, Israel, cultural analytics</p>
 """
 
 intro = f"""
-<p>People use music to regulate how they feel. They pick songs that match, process, or change their mood
-(Saarikallio &amp; Erkkilä, 2007; Chong et al., 2024; Reybrouck et al., 2020), and many seek out sad music when they are
-distressed (Taruffi &amp; Koelsch, 2014; Schubert, 2016). Because streaming platforms publish weekly charts with stream
-counts, it is tempting to treat the emotional content of what a country streams as a continuous, passive index of its
-mood. Such indices would be attractive during prolonged crises, when surveys are slow and costly and reach only part of
-the population (Norris &amp; Stevens, 2007; Conway &amp; O’Connor, 2016).</p>
-<p>Earlier work points in this direction. Streaming behavior relates to personality (Anderson et al., 2021); the acoustic
-features of popular songs follow the weather (Anglada-Tort et al., 2023); and lyrics on the US Billboard charts became
-less negative during societal crises, including the COVID-19 pandemic (Foramitti et al., 2025; see also Levy et al.,
-2024). Text-based mood indices from social media, such as the hedonometer (Dodds et al., 2011), rest on the same idea.</p>
-<p>Three weaknesses can turn such an index into an artefact. First, each charted song must be matched to its lyrics, and a
-lyric database can return a song with the same title by another artist. Second, emotion classifiers trained on other text
-may behave differently on lyrics, and their outputs are rarely checked against human judgment. Third, weekly chart series
-change slowly, so neighboring weeks are not independent. Tests that assume independence then find “significant” trends
-and breaks far more often than their nominal error rate (Granger &amp; Newbold, 1974). Big-data indices that skip these
-checks can look convincing and still fail (Lazer et al., 2014).</p>
-<p>Israel after October 7, 2023 offers a demanding test case. The country went through 28 months of war on several
-fronts, with discrete, widely shared events and well-documented effects on mental health (Levin et al., 2025). In an
-earlier, unpublished version of this analysis, we reported that stream-weighted lyric emotions tracked a coherent trajectory
-over this period. These were rising sadness and disgust, falling fear and trust, statistically validated phases, and a
-burst of joy around military successes in late 2024. In this paper we audit that analysis, rebuild it, and ask three
-questions:</p>
-<p>(1) How accurate is automated lyric retrieval for chart songs, and does it matter for the results?<br>
-(2) Which emotion trends survive correct matching, autocorrelation-robust inference, and checks for dependence on single
-songs?<br>
-(3) What changed in the repertoire Israelis streamed, described with a transparent coding of lyrical themes?</p>
+<p>People use music to regulate how they feel. They choose songs to match, process, intensify, or change their emotional
+state, and they draw on distinct strategies such as entertainment, diversion, revival, discharge, and solace (Saarikallio
+&amp; Erkkilä, 2007; Chong et al., 2024; Reybrouck et al., 2020). Many reach for sad music when distressed (Taruffi &amp;
+Koelsch, 2014; Schubert, 2016). Because each choice is a small act of emotion regulation, the sum of a population’s
+listening choices is a behavioral record of what we call <i>affective demand</i>: the emotional content people seek out. This
+is not the same as how people feel. A population may seek solidarity songs when afraid, or party songs when exhausted.
+Affective demand tells us which regulatory resources a population is reaching for.</p>
+<p>Public streaming charts make this demand observable, week by week and at population scale, without asking anyone
+anything. Earlier work shows that listening data carry psychological signal: streaming behavior relates to personality
+(Anderson et al., 2021), the features of popular songs follow the weather (Anglada-Tort et al., 2023), and lyrics on the
+US Billboard charts turned less negative during societal crises, consistent with listeners seeking contrast rather than a
+mirror of distress (Foramitti et al., 2025; see also Levy et al., 2024). Prolonged collective crises are where such a
+record would be most valuable, because surveys are slow and costly and reach only part of the population (Norris &amp;
+Stevens, 2007; Conway &amp; O’Connor, 2016).</p>
+<p>Measuring affective demand from charts requires three things to go right. Each charted song must be matched to its own
+lyrics, not to a song with the same title by another artist. The emotion measure must reflect the content listeners
+actually receive, yet emotion classifiers trained on other text may behave differently on lyrics. And because chart series
+change slowly, neighboring weeks are not independent, so tests that assume independence find “significant” trends and
+breaks far more often than they should (Granger &amp; Newbold, 1974). Big-data indices that skip such checks can look
+convincing and still fail (Lazer et al., 2014).</p>
+<p>Israel after October 7, 2023 is a demanding case. The country went through 28 months of war on several fronts, with
+discrete, widely shared events and documented effects on mental health (Levin et al., 2025). In an earlier, unpublished
+version of this analysis, classifier-based emotion series suggested rising sadness and disgust, falling fear and trust,
+distinct phases, and a burst of joy around military successes in late 2024. Here we audit and rebuild that analysis and
+add a transparent measure of lyrical content. We ask:</p>
+<p>(1) How did affective demand, the emotional and thematic content Israelis streamed, change over the war?<br>
+(2) Which of these changes are robust to verified lyric matching, autocorrelation-robust inference, and dependence on
+single songs?<br>
+(3) How well do lyric-level emotion classifiers capture affective demand, compared with transparent content coding?</p>
 """
 
 methods = f"""
@@ -239,115 +247,123 @@ without correction for multiple comparisons.</p>
 """
 
 results = f"""
-<h2><b>The earlier pipeline</b></h2>
-<p>The audit found that 43 of the 408 matched songs (11%; 7% of scored streams) carried the lyrics of a different song with
-the same title by another artist (Table 1). For example, <i>רוזה</i> by Omer Adam was scored with Yehoram Gaon’s song of that
-name, and <i>צוחקת ובוכה</i> by Eden Hason with Ilanit’s. These errors included the main
-songs behind the earlier trust result. A further 164 searches had been recorded as “not found” because the site had returned
-a bot-protection page, and 49 long lyrics had been cut at 512 tokens. The earlier manuscript also reported 211 songs where the
+<h2><b>Lyric corpus</b></h2>
+<p>The audit of the earlier pipeline found that 43 of its 408 matched songs (11%; 7% of scored streams) carried the lyrics of
+a different song with the same title by another artist (Table 1). For example, <i>רוזה</i> by Omer Adam was scored with
+Yehoram Gaon’s song of that name, and <i>צוחקת ובוכה</i> by Eden Hason with Ilanit’s. These errors included the main songs
+behind the earlier trust result. A further 164 searches had been recorded as “not found” because the site had returned a
+bot-protection page, and 49 long lyrics had been cut at 512 tokens. The earlier manuscript also reported 211 songs where the
 data held 408.</p>
-<p><b>[Insert Table 1 about here]</b></p>
-
-<h2><b>The audited corpus</b></h2>
-<p>Of the {N['israeli_songs']} Israeli songs, {S['accepted']} were accepted automatically, {S['review']} were held for review,
-and {S['not_found']} were not found on Shironet. Most of the not-found songs were 2025 releases not yet added to the site. After
-excluding non-Hebrew lyrics, {N['scored']} songs were scored. They carried a mean of {pct(N['coverage_mean'])} of weekly streams,
-almost the same coverage as before, but without wrong lyrics. Coverage did not change significantly over time
+<p>With the audited pipeline, {S['accepted']} of the {N['israeli_songs']} Israeli songs were accepted automatically,
+{S['review']} were held for review, and {S['not_found']} were not found on Shironet, most of them 2025 releases not yet added to
+the site. After excluding non-Hebrew lyrics, {N['scored']} songs were analyzed. They carried a mean of
+{pct(N['coverage_mean'])} of weekly streams, and coverage did not change significantly over time
 ({pct(N['coverage_first6'])} in the first six months, {pct(N['coverage_last6'])} in the last six; AR(1) <i>p</i>
 {p_apa(N['coverage_trend_p'])}).</p>
+<p><b>[Insert Table 1 about here]</b></p>
 
-<h2><b>Classifier output</b></h2>
-<p>HebEMO rarely produced intermediate values (Table 2). Disgust exceeded .90 for {pct(N['saturation_gt90']['disgust'], 0)}
-of songs and anger for {pct(N['saturation_gt90']['anger'], 0)}. Fear, joy, and trust were below .10 for more than 97% of
-songs. The sentiment model labelled {pct(N['neg_sent_gt90'], 0)} of songs, including love songs and dance hits, as negative.
-A weekly mean of near-binary scores therefore mostly reflects how many streams went to the few songs labelled 1. It
-reflects the gradual emotional tone of the repertoire much less.</p>
+<h2><b>Thematic content of affective demand</b></h2>
+<p>Table 2 and Figure 1 show the share of listening carried by each theme. Songs about war and security fell from
+{TH['war_security']['first6']:.1f}% of listening in the first six months to {TH['war_security']['last6']:.1f}% in the last six
+(AR(1) <i>p</i> {p_apa(TH['war_security']['p'])}). Hope and resilience fell from {TH['hope_resilience']['first6']:.1f}% to
+{TH['hope_resilience']['last6']:.1f}%, and nation and homeland from {TH['nation_home']['first6']:.1f}% to
+{TH['nation_home']['last6']:.1f}%. These declines followed the fading of the anthems of the first war months, among them
+<i>חרבו דרבו</i> (Ness &amp; Stilla), <i>עם ישראל חי</i> (Eyal Golan), <i>יהיה טוב</i> (Jasmin Moallem; and with Omer Adam),
+and <i>לצאת מדיכאון</i> (Yagel Oshri). Partying and drinking rose from {TH['party_hedonism']['first6']:.1f}% to
+{TH['party_hedonism']['last6']:.1f}% (AR(1) <i>p</i> &lt; .001). This rise was broad-based: the five largest contributors
+produced only {TH['party_hedonism']['top5']}% of it. Faith and prayer (about one song in eight) and romance and heartbreak
+(the most common theme) showed no significant trend.</p>
 <p><b>[Insert Table 2 about here]</b></p>
+<p><b>[Insert Figure 1 about here]</b></p>
 
-<h2><b>Trends</b></h2>
-<p>The weekly series were highly autocorrelated (lag-1 autocorrelation .85–.98). Under these conditions, trend-free
-simulated series reached |ρ| &gt; .5 with naive <i>p</i> &lt; .001 in {pct(N['placebo_share'], 0)} of runs. A Chow break placed
-at any week was “significant” at <i>p</i> &lt; .001 in 72–100% of positions for six of the seven emotions
+<h2><b>Emotional content of affective demand</b></h2>
+<p>The weekly emotion series were highly autocorrelated (lag-1 autocorrelation .85–.98). Under these conditions, trend-free
+simulated series reached |ρ| &gt; .5 with naive <i>p</i> &lt; .001 in {pct(N['placebo_share'], 0)} of runs, and a Chow break
+placed at any week was “significant” at <i>p</i> &lt; .001 in 72–100% of positions for six of the seven emotions
 ({pct(N['chow_anywhere']['fear'], 0)} for fear). The event-anchored phases of the earlier analysis are therefore not
 evidence of real breaks.</p>
-<p>Table 3 and Figure 1 compare the two corpora. In the earlier series, fear, disgust, and trust trends passed the AR(1)
-test. In the audited corpus, only fear did: it declined from {f"{fv2['first6']:.3f}".lstrip('0')} to {f"{fv2['last6']:.3f}".lstrip('0')}
-(ρ = {rho(fv2['spearman'])}, AR(1) <i>p</i> {p_apa(fv2['p_ar1'])}). Disgust (<i>p</i> {p_apa(T[('disgust','v2')]['p_ar1'])}) and
-trust (<i>p</i> {p_apa(T[('trust','v2')]['p_ar1'])}) did not. The fear decline was also found in an intermediate check, which
-re-scored the earlier lyrics after removing the wrong matches.</p>
+<p>Table 3 and Figure 2 compare the earlier and the audited series. In the earlier series, fear, disgust, and trust trends
+passed the AR(1) test. In the audited corpus, only fear did: demand for fear-laden songs declined from
+{f"{fv2['first6']:.3f}".lstrip('0')} to {f"{fv2['last6']:.3f}".lstrip('0')} (ρ = {rho(fv2['spearman'])}, AR(1) <i>p</i>
+{p_apa(fv2['p_ar1'])}). Disgust (<i>p</i> {p_apa(T[('disgust','v2')]['p_ar1'])}) and trust (<i>p</i>
+{p_apa(T[('trust','v2')]['p_ar1'])}) did not. The fear decline also appeared when the earlier lyrics were re-scored after
+removing the wrong matches.</p>
 <p><b>[Insert Table 3 about here]</b></p>
-<p><b>[Insert Figure 1 about here]</b></p>
-<p>The fear decline came from a handful of songs. Five songs, all scored high on fear and streamed heavily early in the war,
-produced more than the entire first-to-last change ({N['fear_top5_share'] * 100:.0f}%): {fear_songs}. The rest of the
-repertoire changed little. Weekly fear correlated with the share of war-themed songs (<i>r</i> = {r2(N['fear_war_r'])};
-first differences <i>r</i> = {r2(N['fear_war_r_diff'])}). At the song level, however, war-themed songs did not score
-significantly higher on fear than other songs.</p>
-<p>The joy peak of late 2024 remained (<i>z</i> = {N['joy_peak_z']:.2f}, week of October 31, 2024), but
-{pct(N['joy_top_share'], 0)} of the excess joy in that window came from one song, {joy_song}. HebEMO scores this devotional song about God’s unconditional love
-.999 on joy. It entered the chart in late September 2024 and reached number one. It is a single hit, and its timing with the
-military events of that autumn does not show a population-wide shift toward joy.</p>
-
-<h2><b>Themes</b></h2>
-<p>Table 4 and Figure 2 show the theme shares. Songs about war and security fell from {TH['war_security']['first6']:.1f}% of listening in the first six months to {TH['war_security']['last6']:.1f}% in the
-last six (AR(1) <i>p</i> {p_apa(TH['war_security']['p'])}).
-Hope and resilience fell from {TH['hope_resilience']['first6']:.1f}% to {TH['hope_resilience']['last6']:.1f}%, and nation and
-homeland from {TH['nation_home']['first6']:.1f}% to {TH['nation_home']['last6']:.1f}%. These declines were driven by the
-anthems of the first war months, which faded from the chart. They included <i>חרבו דרבו</i> (Ness &amp; Stilla), <i>עם ישראל חי</i>
-(Eyal Golan), <i>יהיה טוב</i> (Jasmin Moallem; and with Omer Adam), and <i>לצאת מדיכאון</i> (Yagel Oshri). Partying and drinking
-rose from {TH['party_hedonism']['first6']:.1f}% to {TH['party_hedonism']['last6']:.1f}% (AR(1) <i>p</i> &lt; .001). This rise was
-broad-based: the five largest contributors produced only {TH['party_hedonism']['top5']}% of it. Faith and prayer (about one
-song in eight) and romance and heartbreak (the most common theme) showed no significant trend.</p>
-<p><b>[Insert Table 4 about here]</b></p>
 <p><b>[Insert Figure 2 about here]</b></p>
+<p>The fear decline was carried by a handful of songs. Five songs, scored high on fear and streamed heavily early in the war,
+produced more than the entire first-to-last change ({N['fear_top5_share'] * 100:.0f}%): {fear_songs}. Weekly fear correlated
+with the share of war-themed songs (<i>r</i> = {r2(N['fear_war_r'])}; first differences <i>r</i> =
+{r2(N['fear_war_r_diff'])}), although at the song level war-themed songs did not score significantly higher on fear than other
+songs.</p>
+<p>The joy peak of late 2024 remained (<i>z</i> = {N['joy_peak_z']:.2f}, week of October 31, 2024), but
+{pct(N['joy_top_share'], 0)} of the excess joy in that window came from one song, {joy_song}, a devotional song about God’s
+unconditional love that HebEMO scores .999 on joy. It entered the chart in late September 2024 and reached number one.</p>
+
+<h2><b>How well the classifier captures affective demand</b></h2>
+<p>HebEMO rarely produced intermediate values (Table 4). Disgust exceeded .90 for {pct(N['saturation_gt90']['disgust'], 0)}
+of songs and anger for {pct(N['saturation_gt90']['anger'], 0)}, whereas fear, joy, and trust were below .10 for more than 97%
+of songs. The sentiment model labelled {pct(N['neg_sent_gt90'], 0)} of songs as negative, including love songs and dance hits.
+A weekly mean of such near-binary scores mostly reflects how many streams went to the few songs labelled 1, and much less
+the content of what people chose to hear.</p>
+<p><b>[Insert Table 4 about here]</b></p>
 """
 
 discussion = f"""
-<p>An index that looked coherent and theory-consistent largely failed an audit. Correct lyric matching removed two of the
-three trends that had survived autocorrelation-robust tests. Proper time-series inference removed the phase structure. The
-remaining signals, a fear decline and a joy peak, each rested on a few songs. What remains robust is not a gradual
-change in population emotion. It is a change in repertoire: the war anthems of the first months gave way, gradually, to
-party and drinking songs, while love songs and religious songs held steady.</p>
+<p>Over 28 months of war, the emotional content Israelis chose to stream changed in a clear direction. In the first months,
+a substantial part of listening went to songs about the war itself, to anthems of national unity, and to songs of hope and
+endurance. Two years later these had largely given way to songs about partying and drinking, while love songs and
+religious songs held a steady share. Among the classifier-based emotions, only demand for fear-laden songs declined
+reliably. The earlier picture of rising disgust, falling trust, and distinct phases did not survive verified lyrics and
+appropriate inference.</p>
 
-<h2><b>Why the index misled</b></h2>
-<p>Three mechanisms produced the earlier picture, and each is likely to affect similar studies. First, title-only matching
-errors are not random noise. They attach the lyrics of another, often older, song to a hit, and a single heavily streamed
-hit can move a weekly mean. Second, a near-binary classifier turns a weekly mean into a count of streams for a few songs
-scored 1. Its trends then follow chart turnover, not the tone of the repertoire, and the 98% “negative” rate shows that
-HebEMO does not read lyrics the way listeners do. Third, chart series change slowly, and with lag-1 autocorrelations
-above .9, tests that assume independent weeks produce strong, “highly significant” trends and breaks from noise (Granger
-&amp; Newbold, 1974). An index can pass each of these tests by chance, and a plausible story can then be fitted after the
-fact.</p>
+<h2><b>From mobilization to hedonic distraction</b></h2>
+<p>Read as affective demand, the theme results describe a change in how the population used music to regulate emotion. Early
+in the war, demand centered on content that names the threat and binds the group: songs whose lyrics refer to the war, soldiers, or
+hostages, and anthems such as <i>חרבו דרבו</i>, <i>עם ישראל חי</i>, and <i>יהיה טוב</i>. This fits regulation through
+collective meaning and solidarity, in which music helps people process a shared event and affirm belonging (Saarikallio
+&amp; Erkkilä, 2007; Reybrouck et al., 2020). As the war became chronic, demand moved toward hedonic content that does not
+refer to the war at all. In the terms of Saarikallio and Erkkilä (2007), this resembles a shift from mental work and solace
+toward entertainment and diversion. It parallels the move toward more positive, contrasting music that Foramitti et al.
+(2025) observed during societal crises, although here it emerged gradually rather than as an immediate response. The rise
+was broad, carried by many songs and artists, which makes it unlikely to reflect one hit or one release.</p>
+<p>Two other observations fit this reading. The decline in demand for fear-laden songs followed the fading of a few songs
+streamed heavily in the first months, and weekly fear tracked the share of war-themed songs. The late-2024 joy peak, read
+earlier as collective euphoria around military events, was largely one devotional song about God’s unconditional love,
+<i>תמיד אוהב אותי</i>. Its rise to number one points to demand for reassurance and faith, a regulatory resource that the
+stable share of religious songs shows was in steady use throughout the war.</p>
 
-<h2><b>What the repertoire shows</b></h2>
-<p>The theme results are descriptive, but they rest on lyrics a reader can check. War-specific songs made up almost a quarter
-of Israeli listening in the first six months and about an eighth two years later. Songs of national unity and hope
-dropped out almost entirely. Songs about partying and drinking more than tripled their share, and the rise was spread
-across many songs and artists. This pattern fits accounts of a shift from collective mobilization to a return to
-everyday, and perhaps escapist, listening as a war becomes chronic (cf. Foramitti et al., 2025). It does not show what
-listeners felt. A falling share of war songs may reflect fatigue, recovery, avoidance, or simply chart turnover and
-releases by popular artists. Streaming data alone cannot tell these apart.</p>
+<h2><b>Measuring affective demand</b></h2>
+<p>The audit shows why content measurement matters. Title-only matching attached another artist’s lyrics to 11% of songs,
+including the main songs behind the earlier trust trend. HebEMO, trained on user comments rather than lyrics, assigned most
+songs a probability near 0 or 1 and labelled 98% of songs negative, including love songs and dance hits. A weekly mean of
+such scores mostly counts streams for the few songs scored 1, so it follows chart turnover rather than the content
+listeners chose. With lag-1 autocorrelations above .9, trend and break tests that assume independent weeks will often find
+structure in noise. Transparent theme coding avoids several of these problems: every match can be checked, and its results
+can be traced to specific songs. We suggest that studies of affective demand report lyric-matching accuracy with artist
+verification, the distribution of classifier outputs and a human validation sample, autocorrelation-robust inference with a
+null benchmark, and how much of each result comes from the top few songs.</p>
 
-<h2><b>Implications for lyric-based mood indices</b></h2>
-<p>We suggest four minimum standards for studies that infer population affect from charts or playlists. (a) Report lyric
-matching accuracy, with artist verification. (b) Show the distribution of classifier outputs and validate a sample
-against human raters. (c) Use inference that allows for autocorrelation, and report a placebo or null benchmark. (d)
-Report how much of each result comes from the top few songs. A further step is an external criterion: a lyric index should
-be tested against an independent measure of population mental health, such as survey waves or service-use data, before it
-is called a barometer.</p>
+<h2><b>Affective demand and mental health</b></h2>
+<p>Affective demand is a behavioral signal of regulation, not a direct measure of distress, and the two may diverge. A shift
+toward hedonic content could reflect recovery, but also fatigue, avoidance, or numbing. Linking the two is the next step.
+Weekly demand series could be compared with independent indicators of population mental health, such as repeated surveys,
+helpline contacts, or service use, to test whether particular shifts in demand precede or follow changes in distress.</p>
 
 <p><i>Limitations</i></p>
-<p>The corpus covers Hebrew songs on one platform’s Top 200. It excludes Arabic-language music and listeners who do not use
-Spotify, who skew older and more religious. About a third of weekly streams had no scored lyrics, mostly international
-songs. Charts reflect algorithmic recommendation as well as choice. The theme word list is our own and was refined by
-inspecting matches; it is published in full so others can test alternatives. We did not collect human emotion ratings,
-so we can show that HebEMO behaves implausibly on lyrics but cannot quantify its error. {S['review']} uncertain matches
-({pct(SS['review'])} of streams) were held out, and their exclusion could slightly change the theme shares.</p>
+<p>Demand is observed only through one platform’s Top 200. Spotify users skew younger, Arabic-language music is excluded,
+and charts reflect recommendation algorithms and new releases as well as listeners’ choices; supply and demand cannot be
+fully separated. About a third of weekly streams had no scored lyrics, mostly international songs. Lyrics are only part
+of what a song offers; melody, tempo, and the performer also carry emotional meaning. The theme word list is our own and
+was refined by inspecting matches; it is published in full so others can test alternatives. We did not collect human
+emotion ratings, so we can show that HebEMO behaves implausibly on lyrics but cannot quantify its error. {S['review']}
+uncertain matches ({pct(SS['review'])} of streams) were held out.</p>
 
 <p><i>Conclusion</i></p>
-<p>The emotional content of what a country streams is not yet a measure of how its population feels. In Israel’s charts
-during the war, a careful re-analysis keeps only a decline in fear, carried by five songs, and a clear change in repertoire
-from war anthems to party songs. Studies of music as a mirror of collective mood need verified lyrics, validated
-classifiers, time-series inference, and influence checks before they can support claims about mental health.</p>
+<p>What a population chooses to listen to during a prolonged war is a record of how it regulates emotion. In Israel, that
+record shows a move from war songs, anthems, and hope toward party and drinking songs, with steady demand for faith and
+love songs. Capturing such shifts requires verified lyrics, transparent content measures, and inference suited to slowly
+changing series; with these in place, streaming data can complement slower instruments for understanding collective
+coping in crisis.</p>
 """
 
 declarations = """
@@ -384,17 +400,17 @@ refs = [
 
 figures = f"""
 <p><b>Figure 1</b></p>
-<p><i>Weekly stream-weighted emotion scores in the earlier and the audited corpus</i></p>
+<p><i>Weekly Share of Listening Carried by Songs With Each Lyrical Theme</i></p>
 <p>[Insert Figure 1 here: figure1.png]</p>
-<p><i>Note.</i> Four emotions whose trends passed the AR(1) test in at least one version (fear, disgust, trust) or were
-described as rising in the earlier analysis (sadness). Gray dashed line: earlier pipeline (408 songs); blue line: audited pipeline ({N['scored']} songs). Only the fear
-decline is significant in the audited corpus (AR(1) <i>p</i> {p_apa(fv2['p_ar1'])}).</p>
+<p><i>Note.</i> Shares are percentages of each week’s streams with analyzed lyrics. Thin line: weekly share; thick line:
+centered 8-week rolling mean. All panels share the 0–60% scale. Theme definitions are in Supplementary Section B.</p>
 <p></p>
 <p><b>Figure 2</b></p>
-<p><i>Weekly share of scored listening carried by songs with each lyrical theme</i></p>
+<p><i>Weekly Stream-Weighted Emotion Scores in the Earlier and the Audited Corpus</i></p>
 <p>[Insert Figure 2 here: figure2.png]</p>
-<p><i>Note.</i> Thin line: weekly share; thick line: centered 8-week rolling mean. All panels share the 0–60% scale. Theme definitions
-are in Supplementary Section B.</p>
+<p><i>Note.</i> Four emotions whose trends passed the AR(1) test in at least one version (fear, disgust, trust) or were
+described as rising in the earlier analysis (sadness). Gray dashed line: earlier pipeline (408 songs); blue line: audited
+pipeline ({N['scored']} songs). Only the fear decline is significant in the audited corpus (AR(1) <i>p</i> {p_apa(fv2['p_ar1'])}).</p>
 """
 
 lex_rows = []
@@ -423,7 +439,7 @@ absent, or left for a reviewer who knows the song (covers and partial medleys). 
 stride 255 and averaged with weights for window length.</p>
 
 <h2><b>Section B. Theme word lists</b></h2>
-{table("B1", "Theme word lists and thresholds", ["Theme", "Minimum matches", "Words and phrases"], lex_rows,
+{table("B1", "Theme Word Lists and Thresholds", ["Theme", "Minimum matches", "Words and phrases"], lex_rows,
        "Words match as whole words with up to two attached prefix letters (ו, ה, ב, כ, ל, מ, ש). Ambiguous words "
        "(e.g., בר, which also occurs inside כבר) were removed after inspecting matches.")}
 
@@ -435,7 +451,7 @@ reached |ρ| &gt; .5 with naive <i>p</i> &lt; .001.<br>
 fear AR(1) <i>p</i> &lt; .001; disgust .146; trust .236; sadness .147.<br>
 <b>C4. Coverage drift.</b> {pct(N['coverage_first6'])} → {pct(N['coverage_last6'])}, AR(1) <i>p</i> {p_apa(N['coverage_trend_p'])}.<br>
 <b>C5. Song concentration.</b> Fear: five songs produce {N['fear_top5_share'] * 100:.0f}% of the first-to-last decline. Joy peak:
-one song produces {pct(N['joy_top_share'], 0)} of the excess. Themes: see Table 4.<br>
+one song produces {pct(N['joy_top_share'], 0)} of the excess. Themes: see Table 2.<br>
 <b>C6. Song-level check of the fear–war link.</b> War-themed songs’ mean HebEMO fear .059 versus .012 for other songs
 (Mann–Whitney <i>p</i> = .105).</p>
 """
@@ -445,7 +461,7 @@ css = ("body{font-family:'Times New Roman';font-size:12pt;line-height:2;} h1{fon
 parts = [
     f"<html><head><meta charset='utf-8'><style>{css}</style></head><body>",
     f"<h1><b>{TITLE}</b></h1>",
-    "<p><b>Short title:</b> Israeli streaming during war: an audited lyric analysis</p>",
+    "<p><b>Short title:</b> Affective demand in wartime music streaming</p>",
     "<p><b>Word count:</b> [WORDS] (excluding abstract, references, tables, and figures)</p>",
     "<p>Dana Sinai<sup>1,2</sup>*, Ofer Rahamim<sup>3,4</sup></p>",
     "<p><sup>1</sup> Baruch Ivcher School of Psychology, Reichman University, Herzliya, Israel</p>",
@@ -462,7 +478,7 @@ parts = [
     "<h1><b>Statements and Declarations</b></h1>", declarations,
     "<h1><b>References</b></h1>",
     "".join(f'<p style="padding-left:36pt;text-indent:-36pt;">{r}</p>' for r in refs),
-    "<h1><b>Tables</b></h1>", tab1, tab2, tab3, tab4,
+    "<h1><b>Tables</b></h1>", tab1, tab4, tab3, tab2,
     "<h1><b>Figures</b></h1>", figures,
     "<h1><b>Supplementary Materials</b></h1>", supp,
     "</body></html>",
