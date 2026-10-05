@@ -121,3 +121,29 @@ Weekly stream coverage falls from 66.7% to **60.9%** (range 37–73%).
 - **Only the decline in fear survives.** The disgust and trust trends depended on the wrong lyrics.
 - The Oct 2024 joy peak is unchanged (z = 2.95). It was always one correctly matched song (תמיד אוהב אותי), so it is still a single-song effect.
 - The classifier still saturates (98% of songs scored "negative"). Measurement validity (step 1 of the redesign) remains the main problem, whatever happens with matching.
+
+### New corpus from the v2 pipeline (5 Oct 2026) — `reanalysis/results_v2_corpus/`
+
+Run on Dana's Mac; Shironet blocked that address too after ~650 songs, and the rest was finished from saved pages.
+- 837 Israeli chart songs: **485 accepted** (every one with artist match ≥ 85), 129 held for review, 115 not found,
+  96 left for a later run (0.3% of streams), 12 Shironet pages without lyrics.
+- Compared with the old corpus: 126 songs newly found, 49 dropped as wrong or doubtful.
+  Weekly stream coverage is **66.4%** (range 47–76%), the same as the published 66.7%, but now without wrong lyrics.
+
+| Emotion | Published (AR(1) p) | Corrected old corpus | **v2 corpus** |
+|---|---|---|---|
+| fear (falling) | .004 | < .001 | **< .001** |
+| disgust (rising) | .007 | .146 | .135 |
+| trust (falling) | .027 | .236 | .255 |
+| sadness (rising) | .322 | .147 | .115 |
+| joy, anger, anticipation | n.s. | n.s. | n.s. |
+
+- The **decline in fear is the only trend that is robust** across all three versions.
+- The October 2024 joy peak is still there (z = 2.83), and it is still one song.
+- Phase differences (Kruskal-Wallis) remain "significant" (p < 1e-13), but with autocorrelated weekly data this is
+  expected even when nothing real is going on. Do not report them as confirmatory.
+- The classifier still labels 98% of songs as negative. Validating it against human raters remains the priority.
+
+Still open: hand-check the most-streamed review songs (top 25 = 75% of review streams; about 8 are correct and only
+failed on spelling or artist-name variants), look up the 115 not-found songs (5.0% of streams, including major hits),
+and rerun once Shironet allows the remaining 96 songs.
